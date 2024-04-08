@@ -18,11 +18,18 @@ package controller
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	corev1 "k8s.io/api/core/v1"
 
 	gameserverv1alpha1 "github.com/templarfelix/gameserver-operator/api/v1alpha1"
 )
@@ -49,9 +56,61 @@ type DayzReconciler struct {
 func (r *DayzReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	instance := &gameserverv1alpha1.Dayz{}
 
-	return ctrl.Result{}, nil
+	err := r.Client.Get(ctx, req.NamespacedName, instance)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Objeto não encontrado, pode ter sido deletado após o request de reconciliação. Sair do processamento.
+			return reconcile.Result{}, nil
+		}
+		// Erro ao ler o objeto, re-enfileirar o request.
+		return reconcile.Result{}, err
+	}
+
+	// Reconciliação do PVC
+	if err := r.reconcilePVC(ctx, instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	return reconcile.Result{}, nil
+}
+
+func (r *DayzReconciler) reconcilePVC(ctx context.Context, instance *gameserverv1alpha1.Dayz) error {
+	logger := log.FromContext(ctx)
+
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      instance.Name + "-pvc",
+			Namespace: instance.Namespace,
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: resource.MustParse(instance.Spec.Storage),
+				},
+			},
+		},
+	}
+
+	if err := controllerutil.SetControllerReference(instance, pvc, r.Scheme); err != nil {
+		return err
+	}
+
+	found := &corev1.PersistentVolumeClaim{}
+	err := r.Client.Get(ctx, client.ObjectKey{Name: pvc.Name, Namespace: pvc.Namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		logger.Info("Creating a new PVC %s/%s\n", pvc.Namespace, pvc.Name)
+		err = r.Client.Create(ctx, pvc)
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

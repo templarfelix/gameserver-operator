@@ -1,5 +1,5 @@
 # gameserver-operator
-// TODO(user): Add simple overview of use/purpose
+Kubernetes operator for run linuxgsm game server
 
 ## Description
 // TODO(user): An in-depth paragraph about your project and overview of use
@@ -16,7 +16,7 @@
 **Build and push your image to the location specified by `IMG`:**
 
 ```sh
-make docker-build docker-push IMG=<some-registry>/gameserver-operator:tag
+make docker-build docker-push IMG=templarfelix/gameserver-operator:latest
 ```
 
 **NOTE:** This image ought to be published in the personal registry you specified. 
@@ -32,7 +32,7 @@ make install
 **Deploy the Manager to the cluster with the image specified by `IMG`:**
 
 ```sh
-make deploy IMG=<some-registry>/gameserver-operator:tag
+make deploy IMG=templarfelix/gameserver-operator:latest
 ```
 
 > **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin 

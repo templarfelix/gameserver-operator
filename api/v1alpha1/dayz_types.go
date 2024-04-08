@@ -25,17 +25,17 @@ import (
 
 // DayzSpec defines the desired state of Dayz
 type DayzSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	//+kubebuilder:default="gameservermanagers/gameserver:dayz"
+	Image string `json:"image"`
 
-	// Foo is an example field of Dayz. Edit dayz_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	//+kubebuilder:default="10G"
+	Storage string `json:"storage,omitempty"`
 }
 
 // DayzStatus defines the observed state of Dayz
 type DayzStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Conditions represent the latest available observations of an object's state
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true

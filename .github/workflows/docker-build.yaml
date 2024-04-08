@@ -20,6 +20,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: templarfelix/gameserver-operator
+          flavor: |
+            latest=true
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v3

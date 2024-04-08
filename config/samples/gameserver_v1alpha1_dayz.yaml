@@ -9,4 +9,4 @@ metadata:
     app.kubernetes.io/created-by: gameserver-operator
   name: dayz-sample
 spec:
-  # TODO(user): Add fields here
+  storage: 10G
