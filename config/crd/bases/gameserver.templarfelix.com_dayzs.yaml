@@ -34,6 +34,14 @@ spec:
           spec:
             description: DayzSpec defines the desired state of Dayz
             properties:
+              config:
+                description: DayzConfig defines configuration for Dayz & LinuxGSM
+                properties:
+                  gsm:
+                    type: string
+                  server:
+                    type: string
+                type: object
               image:
                 default: gameservermanagers/gameserver:dayz
                 type: string

@@ -306,3 +306,15 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+## CUSTOM
+
+# ALL FOR TEST
+.PHONY: debug
+debug: ## debug
+	$(MAKE) manifests
+	$(MAKE) install
+	$(MAKE) docker-build docker-push IMG=templarfelix/gameserver-operator:latest
+	$(MAKE) deploy IMG=templarfelix/gameserver-operator:latest
+
+

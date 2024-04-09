@@ -30,6 +30,14 @@ type DayzSpec struct {
 
 	//+kubebuilder:default="10G"
 	Storage string `json:"storage,omitempty"`
+
+	Config DayzConfig `json:"config,omitempty"`
+}
+
+// DayzConfig defines configuration for Dayz & LinuxGSM
+type DayzConfig struct {
+	Server string `json:"server,omitempty"`
+	GSM    string `json:"gsm,omitempty"`
 }
 
 // DayzStatus defines the observed state of Dayz
