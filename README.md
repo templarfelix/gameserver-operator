@@ -1,8 +1,20 @@
 # gameserver-operator
-Kubernetes operator for run linuxgsm game server
+Kubernetes operator for running LinuxGSM game servers.
 
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+The `GameServer-Operator` is a Kubernetes project designed to facilitate the deployment and management of LinuxGSM game servers in a Kubernetes environment. With this operator, users can easily scale their game servers, automate updates, and maintain desired configurations through Custom Resource Definitions (CRDs). This project aims to simplify the complexity of managing game servers by providing a robust and scalable solution for gaming communities and service providers.
+
+## need help to deploy kubernetes clusters?
+
+Navigate to the gameserver-operator GitHub project  where the Pulumi script is located.
+
+## Supported Games
+
+The operator is capable of managing a variety of game servers supported by the LinuxGSM platform. Below is a list of popular games that are compatible, along with links to their specific configurations:
+
+- **DayZ** - [Configurations](https://linuxgsm.com/lgsm/dayz/)
+
+For a complete list of supported games, visit the [LinuxGSM servers page](https://linuxgsm.com/servers/).
 
 ## Getting Started
 

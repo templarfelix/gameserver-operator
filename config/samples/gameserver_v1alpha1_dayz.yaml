@@ -11,6 +11,35 @@ metadata:
 spec:
   storage: 10G
   #loadBalancerIP:
+  ports:
+    - name: port-27015-tcp
+      port: 27015
+      targetPort: 27015
+      protocol: TCP
+    - name: port-27016-tcp
+      port: 27016
+      targetPort: 27016
+      protocol: TCP
+    - name: port-2302-udp
+      port: 2302
+      targetPort: 2302
+      protocol: UDP
+    - name: port-2304-udp
+      port: 2304
+      targetPort: 2304
+      protocol: UDP
+    - name: port-2306-udp
+      port: 2306
+      targetPort: 2306
+      protocol: UDP
+    - name: port-27015-udp
+      port: 27015
+      targetPort: 27015
+      protocol: UDP
+    - name: port-27016-udp
+      port: 27016
+      targetPort: 27016
+      protocol: UDP
   config:
     # dayz server config
     server: |
@@ -29,13 +58,13 @@ spec:
       // GENERAL SETTINGS
   
       // Server name
-      hostname = "LinuxGSM-TemplarFelix";
+      hostname = "gameserver-operator";
   
       // Password to connect to the server
       //password = "";
   
       // Password to become a server admin
-      passwordAdmin = "adminUfYyXl3T";
+      passwordAdmin = "changeme";
   
       // Enable/disable whitelist (value 0-1)
       enableWhitelist = 0;

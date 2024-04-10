@@ -90,7 +90,7 @@ func (r *DayzReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *gameserverv1alpha1.Dayz) error {
 	logger := log.FromContext(ctx)
 
-	resource := &appsv1.Deployment{
+	k8sResource := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      instance.Name + "-deployment",
 			Namespace: instance.Namespace,
@@ -113,14 +113,10 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 								"sh", "-c", `
 								mkdir -p /data/config-lgsm/dayzserver/ &&
 								mkdir -p /data/serverfiles/cfg/ &&
-								ls -la /tmp &&
-								ls -la /tmp/config-gsm &&
-								ls -la /tmp/config-server 
-								#&& 
-								#cp /tmp/config-gsm/dayzserver.cfg /data/config-lgsm/dayzserver/dayzserver.cfg &&
-								#cp /tmp/config-server/dayzserver.server.cfg /data/serverfiles/cfg/dayzserver.server.cfg &&
-								#chown 1000:1000 /data/config-lgsm/dayzserver/dayzserver.cfg &&
-								#chown 1000:1000 /data/serverfiles/cfg/dayzserver.server.cfg
+								cp /tmp/config-gsm/dayzserver.cfg /data/config-lgsm/dayzserver/dayzserver.cfg &&
+								cp /tmp/config-server/dayzserver.server.cfg /data/serverfiles/cfg/dayzserver.server.cfg &&
+								chown 1000:1000 /data/config-lgsm/dayzserver/dayzserver.cfg &&
+								chown 1000:1000 /data/serverfiles/cfg/dayzserver.server.cfg
 								`,
 							},
 							VolumeMounts: []corev1.VolumeMount{
@@ -220,15 +216,15 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 		},
 	}
 
-	if err := controllerutil.SetControllerReference(instance, resource, r.Scheme); err != nil {
+	if err := controllerutil.SetControllerReference(instance, k8sResource, r.Scheme); err != nil {
 		return err
 	}
 
 	found := &appsv1.Deployment{}
-	err := r.Client.Get(ctx, client.ObjectKey{Name: resource.Name, Namespace: resource.Namespace}, found)
+	err := r.Client.Get(ctx, client.ObjectKey{Name: k8sResource.Name, Namespace: k8sResource.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating a new Deployment %s/%s\n", resource.Namespace, resource.Name)
-		err = r.Client.Create(ctx, resource)
+		logger.Info("Creating a new Deployment %s/%s\n", k8sResource.Namespace, k8sResource.Name)
+		err = r.Client.Create(ctx, k8sResource)
 		if err != nil {
 			return err
 		}
@@ -244,7 +240,7 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 func (r *DayzReconciler) reconcilePVC(ctx context.Context, instance *gameserverv1alpha1.Dayz) error {
 	logger := log.FromContext(ctx)
 
-	resource := &corev1.PersistentVolumeClaim{
+	k8sResource := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      instance.Name + "-pvc",
 			Namespace: instance.Namespace,
@@ -259,15 +255,15 @@ func (r *DayzReconciler) reconcilePVC(ctx context.Context, instance *gameserverv
 		},
 	}
 
-	if err := controllerutil.SetControllerReference(instance, resource, r.Scheme); err != nil {
+	if err := controllerutil.SetControllerReference(instance, k8sResource, r.Scheme); err != nil {
 		return err
 	}
 
 	found := &corev1.PersistentVolumeClaim{}
-	err := r.Client.Get(ctx, client.ObjectKey{Name: resource.Name, Namespace: resource.Namespace}, found)
+	err := r.Client.Get(ctx, client.ObjectKey{Name: k8sResource.Name, Namespace: k8sResource.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating a new PVC %s/%s\n", resource.Namespace, resource.Name)
-		err = r.Client.Create(ctx, resource)
+		logger.Info("Creating a new PVC %s/%s\n", k8sResource.Namespace, k8sResource.Name)
+		err = r.Client.Create(ctx, k8sResource)
 		if err != nil {
 			return err
 		}
@@ -283,7 +279,7 @@ func (r *DayzReconciler) reconcilePVC(ctx context.Context, instance *gameserverv
 func (r *DayzReconciler) reconcileConfigMap(ctx context.Context, instance *gameserverv1alpha1.Dayz) error {
 	logger := log.FromContext(ctx)
 
-	resource := &corev1.ConfigMap{
+	k8sResource := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      instance.Name + "-configmap",
 			Namespace: instance.Namespace,
@@ -294,15 +290,15 @@ func (r *DayzReconciler) reconcileConfigMap(ctx context.Context, instance *games
 		},
 	}
 
-	if err := controllerutil.SetControllerReference(instance, resource, r.Scheme); err != nil {
+	if err := controllerutil.SetControllerReference(instance, k8sResource, r.Scheme); err != nil {
 		return err
 	}
 
 	found := &corev1.ConfigMap{}
-	err := r.Client.Get(ctx, client.ObjectKey{Name: resource.Name, Namespace: resource.Namespace}, found)
+	err := r.Client.Get(ctx, client.ObjectKey{Name: k8sResource.Name, Namespace: k8sResource.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating a new Configmap %s/%s\n", resource.Namespace, resource.Name)
-		err = r.Client.Create(ctx, resource)
+		logger.Info("Creating a new Configmap %s/%s\n", k8sResource.Namespace, k8sResource.Name)
+		err = r.Client.Create(ctx, k8sResource)
 		if err != nil {
 			return err
 		}
