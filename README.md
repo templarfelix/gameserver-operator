@@ -25,7 +25,7 @@ Navigate to the [gameserver-operator-infra](https://github.com/templarfelix/game
 The operator is capable of managing a variety of game servers supported by the LinuxGSM platform. Below is a list of
 popular games that are compatible, along with links to their specific configurations:
 
-- **DayZ** - [Configurations](/docs/dayz.md)
+- **DayZ** - [Configurations](/_docs/dayz.md)
 - **AnotherGames** - [Open Ticket](https://github.com/templarfelix/gameserver-operator/issues/new?assignees=&labels=&projects=&template=gamerequest.md&title=)
 
 For a complete list of supported games, visit the [LinuxGSM servers page](https://linuxgsm.com/servers/).
