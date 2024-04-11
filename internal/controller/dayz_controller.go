@@ -19,7 +19,6 @@ package controller
 import (
 	"context"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -72,7 +71,7 @@ func (r *DayzReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 		return reconcile.Result{}, err
 	}
-	if err := r.reconcilePVC(ctx, instance); err != nil {
+	if err := ReconcilePVC(ctx, r.Client, instance, instance.Spec.Storage); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -81,6 +80,10 @@ func (r *DayzReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	if err := r.reconcileDeployment(ctx, instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if err := ReconcileServices(ctx, r.Client, instance, instance.Spec.Ports); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -233,45 +236,6 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 	}
 
 	logger.Info("Skip reconcile: Deployment %s/%s already exists", found.Namespace, found.Name)
-
-	return nil
-}
-
-func (r *DayzReconciler) reconcilePVC(ctx context.Context, instance *gameserverv1alpha1.Dayz) error {
-	logger := log.FromContext(ctx)
-
-	k8sResource := &corev1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      instance.Name + "-pvc",
-			Namespace: instance.Namespace,
-		},
-		Spec: corev1.PersistentVolumeClaimSpec{
-			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					corev1.ResourceStorage: resource.MustParse(instance.Spec.Storage),
-				},
-			},
-		},
-	}
-
-	if err := controllerutil.SetControllerReference(instance, k8sResource, r.Scheme); err != nil {
-		return err
-	}
-
-	found := &corev1.PersistentVolumeClaim{}
-	err := r.Client.Get(ctx, client.ObjectKey{Name: k8sResource.Name, Namespace: k8sResource.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating a new PVC %s/%s\n", k8sResource.Namespace, k8sResource.Name)
-		err = r.Client.Create(ctx, k8sResource)
-		if err != nil {
-			return err
-		}
-	} else if err != nil {
-		return err
-	}
-
-	logger.Info("Skip reconcile: PVC %s/%s already exists", found.Namespace, found.Name)
 
 	return nil
 }

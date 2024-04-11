@@ -28,8 +28,7 @@ type DayzSpec struct {
 	//+kubebuilder:default="gameservermanagers/gameserver:dayz"
 	Image string `json:"image"`
 
-	//+kubebuilder:default="10G"
-	Storage string `json:"storage,omitempty"`
+	Base `json:",inline"`
 
 	Config DayzConfig `json:"config,omitempty"`
 }
