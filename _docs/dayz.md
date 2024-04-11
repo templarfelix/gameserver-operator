@@ -15,10 +15,13 @@ https://github.com/GameServerManagers/Game-Server-Configs/blob/main/dayz/server.
 
 ### Required
 
-hostname = "SERVERNAME";
-passwordAdmin = "ADMINPASSWORD";
+    hostname = "SERVERNAME";
+    passwordAdmin = "ADMINPASSWORD";
 
 ## Kubernetes gameserver Dayz kind
+
+> Please Generate a GCP OR AWS public ip and use in **loadBalancerIP**
+
 
 ```yaml
 apiVersion: gameserver.templarfelix.com/v1alpha1
