@@ -11,21 +11,21 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: dayz-editor-role
 rules:
-- apiGroups:
-  - gameserver.templarfelix.com
-  resources:
-  - dayzs
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - gameserver.templarfelix.com
-  resources:
-  - dayzs/status
-  verbs:
-  - get
+  - apiGroups:
+      - gameserver.templarfelix.com
+    resources:
+      - dayzs
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gameserver.templarfelix.com
+    resources:
+      - dayzs/status
+    verbs:
+      - get

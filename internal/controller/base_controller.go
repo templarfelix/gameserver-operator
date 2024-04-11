@@ -16,7 +16,6 @@ func ReconcilePVC(ctx context.Context, k8sClient client.Client, owner metav1.Obj
 	logger := log.FromContext(ctx)
 	pvcName := owner.GetName() + "-pvc"
 
-	// Define o PVC desejado
 	desired := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      pvcName,
@@ -32,7 +31,6 @@ func ReconcilePVC(ctx context.Context, k8sClient client.Client, owner metav1.Obj
 		},
 	}
 
-	// Define o objeto como proprietário do PVC
 	if err := controllerutil.SetControllerReference(owner, desired, k8sClient.Scheme()); err != nil {
 		return err
 	}
@@ -47,76 +45,59 @@ func ReconcilePVC(ctx context.Context, k8sClient client.Client, owner metav1.Obj
 		return err
 	}
 
-	// Se o PVC já existir, loga que está pulando a criação e retorna nil
 	logger.Info("Skip reconcile: PVC already exists", "Namespace", found.Namespace, "Name", found.Name)
 	return nil
 }
 
-func ReconcileServices(ctx context.Context, k8sClient client.Client, owner metav1.Object, ports []corev1.ServicePort) error {
-	logger := log.FromContext(ctx)
-	serviceNameTCP := owner.GetName() + "-tcp"
-	serviceNameUDP := owner.GetName() + "-tcp"
+func ReconcileServices(ctx context.Context, k8sClient client.Client, owner metav1.Object, ports []corev1.ServicePort, loadBalancerIP string) error {
 
 	tcpPorts, udpPorts := separatePortsByProtocol(ports)
 
-	// TCP
-	desiredTCP := &corev1.Service{
+	if err := reconcileService(ctx, owner.GetName()+"-tcp", k8sClient, owner, tcpPorts, loadBalancerIP); err != nil {
+		return err
+	}
+
+	if err := reconcileService(ctx, owner.GetName()+"-udp", k8sClient, owner, udpPorts, loadBalancerIP); err != nil {
+		return err
+	}
+	return nil
+}
+
+func reconcileService(ctx context.Context, serviceName string, k8sClient client.Client, owner metav1.Object, ports []corev1.ServicePort, loadBalancerIP string) error {
+	logger := log.FromContext(ctx)
+
+	desired := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      serviceNameTCP,
+			Name:      serviceName,
 			Namespace: owner.GetNamespace(),
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
 				"app": owner.GetName(),
 			},
-			Ports: tcpPorts,
+			Type:  corev1.ServiceTypeLoadBalancer,
+			Ports: ports,
 		},
 	}
 
-	// TCP
-	desiredUDP := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      serviceNameUDP,
-			Namespace: owner.GetNamespace(),
-		},
-		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{
-				"app": owner.GetName(),
-			},
-			Ports: udpPorts,
-		},
+	if loadBalancerIP != "" {
+		desired.Spec.LoadBalancerIP = loadBalancerIP
 	}
 
-	// TCP
-	if err := controllerutil.SetControllerReference(owner, desiredTCP, k8sClient.Scheme()); err != nil {
+	if err := controllerutil.SetControllerReference(owner, desired, k8sClient.Scheme()); err != nil {
 		return err
 	}
 
-	foundTCP := &corev1.PersistentVolumeClaim{}
-	errTCP := k8sClient.Get(ctx, types.NamespacedName{Name: serviceNameTCP, Namespace: owner.GetNamespace()}, foundTCP)
-	if errTCP != nil && errors.IsNotFound(errTCP) {
-		logger.Info("Creating a new Service", "Namespace", owner.GetNamespace(), "Name", desiredTCP)
-		return k8sClient.Create(ctx, desiredTCP)
-	} else if errTCP != nil {
-		return errTCP
-	}
-	logger.Info("Skip reconcile: Service already exists", "Namespace", foundTCP.Namespace, "Name", foundTCP.Name)
-
-	// UDP
-	if err := controllerutil.SetControllerReference(owner, desiredUDP, k8sClient.Scheme()); err != nil {
-		return err
-	}
-
-	foundUDP := &corev1.PersistentVolumeClaim{}
-	err := k8sClient.Get(ctx, types.NamespacedName{Name: serviceNameUDP, Namespace: owner.GetNamespace()}, foundUDP)
+	found := &corev1.PersistentVolumeClaim{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: serviceName, Namespace: owner.GetNamespace()}, found)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating a new Service", "Namespace", owner.GetNamespace(), "Name", desiredTCP)
-		return k8sClient.Create(ctx, desiredTCP)
+		logger.Info("Creating a new Service", "Namespace", owner.GetNamespace(), "Name", desired)
+		return k8sClient.Create(ctx, desired)
 	} else if err != nil {
 		return err
 	}
 
-	logger.Info("Skip reconcile: Service already exists", "Namespace", foundUDP.Namespace, "Name", foundUDP.Name)
+	logger.Info("Skip reconcile: Service already exists", "Namespace", found.Namespace, "Name", found.Name)
 	return nil
 }
 

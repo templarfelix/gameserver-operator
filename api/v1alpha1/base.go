@@ -8,5 +8,7 @@ type Base struct {
 	//+kubebuilder:default="10G"
 	Storage string `json:"storage,omitempty"`
 
+	LoadBalancerIP string `json:"loadBalancerIP,omitempty"`
+
 	Ports []corev1.ServicePort `json:"ports"`
 }

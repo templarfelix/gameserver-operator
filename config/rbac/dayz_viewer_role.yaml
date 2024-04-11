@@ -11,17 +11,17 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: dayz-viewer-role
 rules:
-- apiGroups:
-  - gameserver.templarfelix.com
-  resources:
-  - dayzs
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - gameserver.templarfelix.com
-  resources:
-  - dayzs/status
-  verbs:
-  - get
+  - apiGroups:
+      - gameserver.templarfelix.com
+    resources:
+      - dayzs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - gameserver.templarfelix.com
+    resources:
+      - dayzs/status
+    verbs:
+      - get

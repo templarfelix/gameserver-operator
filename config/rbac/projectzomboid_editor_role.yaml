@@ -11,21 +11,21 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: projectzomboid-editor-role
 rules:
-- apiGroups:
-  - gameserver.templarfelix.com
-  resources:
-  - projectzomboids
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - gameserver.templarfelix.com
-  resources:
-  - projectzomboids/status
-  verbs:
-  - get
+  - apiGroups:
+      - gameserver.templarfelix.com
+    resources:
+      - projectzomboids
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gameserver.templarfelix.com
+    resources:
+      - projectzomboids/status
+    verbs:
+      - get

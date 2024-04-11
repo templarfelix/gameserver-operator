@@ -1,38 +1,91 @@
 # gameserver-operator
+
 Kubernetes operator for running LinuxGSM game servers.
 
+# Thanks
+
+<span style="background-color: #FFD700; color: black; padding: 2px 5px; border-radius: 5px;">LinuxGSM</span> - [Visit LinuxGSM Site](https://linuxgsm.com/)
+
+
 ## Description
-The `GameServer-Operator` is a Kubernetes project designed to facilitate the deployment and management of LinuxGSM game servers in a Kubernetes environment. With this operator, users can easily scale their game servers, automate updates, and maintain desired configurations through Custom Resource Definitions (CRDs). This project aims to simplify the complexity of managing game servers by providing a robust and scalable solution for gaming communities and service providers.
+
+The `GameServer-Operator` is a Kubernetes project designed to facilitate the deployment and management of LinuxGSM game
+servers in a Kubernetes environment. With this operator, users can easily scale their game servers, automate updates,
+and maintain desired configurations through Custom Resource Definitions (CRDs). This project aims to simplify the
+complexity of managing game servers by providing a robust and scalable solution for gaming communities and service
+providers.
 
 ## need help to deploy kubernetes clusters?
 
-Navigate to the gameserver-operator GitHub project  where the Pulumi script is located.
+Navigate to the gameserver-operator GitHub project where the Pulumi script is located.
 
 ## Supported Games
 
-The operator is capable of managing a variety of game servers supported by the LinuxGSM platform. Below is a list of popular games that are compatible, along with links to their specific configurations:
+The operator is capable of managing a variety of game servers supported by the LinuxGSM platform. Below is a list of
+popular games that are compatible, along with links to their specific configurations:
 
-- **DayZ** - [Configurations](https://linuxgsm.com/lgsm/dayz/)
+- **DayZ** - [Configurations](./docs/dayz.md)
+- **AnotherGames **  - [Open Ticket](www.google.com.br)
 
 For a complete list of supported games, visit the [LinuxGSM servers page](https://linuxgsm.com/servers/).
 
 ## Getting Started
 
+## Install
+
+Examples
+
+### Kustomize
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - github.com/templarfelix/gameserver-operator/config/default?ref=main
+```
+
+### ArgoCD
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gameserver-operator
+  namespace: argocd  # This should be the namespace where Argo CD is installed
+spec:
+  project: default  # The Argo CD project, 'default' unless you've created others
+  source:
+    repoURL: 'https://github.com/templarfelix/gameserver-operator.git'
+    targetRevision: 'main'
+    path: 'config/default'
+  destination:
+    server: 'https://kubernetes.default.svc'  # URL of the Kubernetes API server
+    namespace: 'default'  # The namespace in Kubernetes where to deploy the application
+  syncPolicy:
+    automated:  # Optional: enable automatic sync
+      selfHeal: true
+      prune: true  # This will prune resources that are not in git anymore
+```
+
+## Build Local
+
 ### Prerequisites
+
 - go version v1.20.0+
 - docker version 17.03+.
 - kubectl version v1.11.3+.
 - Access to a Kubernetes v1.11.3+ cluster.
 
 ### To Deploy on the cluster
+
 **Build and push your image to the location specified by `IMG`:**
 
 ```sh
 make docker-build docker-push IMG=templarfelix/gameserver-operator:latest
 ```
 
-**NOTE:** This image ought to be published in the personal registry you specified. 
-And it is required to have access to pull the image from the working environment. 
+**NOTE:** This image ought to be published in the personal registry you specified.
+And it is required to have access to pull the image from the working environment.
 Make sure you have the proper permission to the registry if the above commands don’t work.
 
 **Install the CRDs into the cluster:**
@@ -47,8 +100,8 @@ make install
 make deploy IMG=templarfelix/gameserver-operator:latest
 ```
 
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin 
-privileges or be logged in as admin.
+> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
+> privileges or be logged in as admin.
 
 **Create instances of your solution**
 You can apply the samples (examples) from the config/sample:
@@ -57,9 +110,10 @@ You can apply the samples (examples) from the config/sample:
 kubectl apply -k config/samples/
 ```
 
->**NOTE**: Ensure that the samples has default values to test it out.
+> **NOTE**: Ensure that the samples has default values to test it out.
 
 ### To Uninstall
+
 **Delete the instances (CRs) from the cluster:**
 
 ```sh
@@ -79,6 +133,7 @@ make undeploy
 ```
 
 ## Contributing
+
 // TODO(user): Add detailed information on how you would like others to contribute to this project
 
 **NOTE:** Run `make help` for more information on all potential `make` targets

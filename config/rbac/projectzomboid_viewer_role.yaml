@@ -11,17 +11,17 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: projectzomboid-viewer-role
 rules:
-- apiGroups:
-  - gameserver.templarfelix.com
-  resources:
-  - projectzomboids
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - gameserver.templarfelix.com
-  resources:
-  - projectzomboids/status
-  verbs:
-  - get
+  - apiGroups:
+      - gameserver.templarfelix.com
+    resources:
+      - projectzomboids
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - gameserver.templarfelix.com
+    resources:
+      - projectzomboids/status
+    verbs:
+      - get
