@@ -2,7 +2,8 @@
 
 Kubernetes operator for running LinuxGSM game servers.
 
-# Thanks to :rofl:
+# Thanks TO <a href="https://www.templarfelix.com"><img src="https://media.giphy.com/media/hvRJCLFzcasrR4ia7z/giphy.gif" width="25px"></a>
+
 
 - **LinuxGSM** - [Visit LinuxGSM Site](https://linuxgsm.com/)
 - **Operator SDK** - [Visit OperatorSDK Site](https://sdk.operatorframework.io)
