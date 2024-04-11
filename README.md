@@ -18,7 +18,7 @@ providers.
 
 ## Need help to deploy kubernetes clusters?
 
-Navigate to the [gameserver-operator-infra](https://github.com/templarfelix/gameserver-operator-infra) GitHub and read the docs.
+Navigate to the [gameserver-operator-infra](https://github.com/templarfelix/gameserver-operator-infra) GitHub project and read the docs.
 
 ## Supported Games
 
