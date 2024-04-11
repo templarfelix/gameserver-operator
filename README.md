@@ -2,10 +2,10 @@
 
 Kubernetes operator for running LinuxGSM game servers.
 
-# Thanks
+# Thanks to :rofl:
 
-<span style="background-color: #FFD700; color: black; padding: 2px 5px; border-radius: 5px;">LinuxGSM</span> - [Visit LinuxGSM Site](https://linuxgsm.com/)
-
+- **LinuxGSM** - [Visit LinuxGSM Site](https://linuxgsm.com/)
+- **Operator SDK** - [Visit OperatorSDK Site](https://sdk.operatorframework.io)
 
 ## Description
 
