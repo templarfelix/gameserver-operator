@@ -2,10 +2,6 @@
 
 ## Linux GSM DayZ config
 
-https://github.com/GameServerManagers/Game-Server-Configs/blob/main/dayz/server.cfg
-
-## Server Dayz config
-
 https://github.com/GameServerManagers/LinuxGSM/blob/master/lgsm/config-default/config-lgsm/dayzserver/_default.cfg
 
 ### Required
@@ -13,6 +9,14 @@ https://github.com/GameServerManagers/LinuxGSM/blob/master/lgsm/config-default/c
     steamuser="username"
     steampass='password'
 
+## Server Dayz config
+
+https://github.com/GameServerManagers/Game-Server-Configs/blob/main/dayz/server.cfg
+
+### Required
+
+hostname = "SERVERNAME";
+passwordAdmin = "ADMINPASSWORD";
 
 ## Kubernetes gameserver Dayz kind
 
