@@ -26,7 +26,7 @@ The operator is capable of managing a variety of game servers supported by the L
 popular games that are compatible, along with links to their specific configurations:
 
 - **DayZ** - [Configurations](./docs/dayz.md)
-- **AnotherGames**  - [Open Ticket](https://github.com/templarfelix/gameserver-operator/issues/new?assignees=&labels=&projects=&template=gamerequest.md&title=Please Add Game XYZ)
+- **AnotherGames** - [Open Ticket]("https://github.com/templarfelix/gameserver-operator/issues/new?assignees=&labels=&projects=&template=gamerequest.md&title=Please Add Game XYZ")
 
 For a complete list of supported games, visit the [LinuxGSM servers page](https://linuxgsm.com/servers/).
 
