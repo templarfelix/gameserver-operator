@@ -16,9 +16,9 @@ and maintain desired configurations through Custom Resource Definitions (CRDs). 
 complexity of managing game servers by providing a robust and scalable solution for gaming communities and service
 providers.
 
-## need help to deploy kubernetes clusters?
+## Need help to deploy kubernetes clusters?
 
-Navigate to the gameserver-operator GitHub project where the Pulumi script is located.
+Navigate to the [gameserver-operator-infra](https://github.com/templarfelix/gameserver-operator-infra) GitHub and read the docs.
 
 ## Supported Games
 
