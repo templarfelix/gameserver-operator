@@ -36,7 +36,7 @@ metadata:
   name: dayz-sample
 spec:
   storage: 10G
-  #loadBalancerIP:
+  #loadBalancerIP: your ipv4 public ip 0.0.0.0
   ports:
     - name: port-27015-tcp
       port: 27015
