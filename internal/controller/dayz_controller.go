@@ -144,8 +144,9 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 					},
 					Containers: []corev1.Container{
 						{
-							Name:  "server",
-							Image: instance.Spec.Image,
+							Name:      "server",
+							Image:     instance.Spec.Image,
+							Resources: instance.Spec.Resources,
 							Ports: []corev1.ContainerPort{
 								{
 									ContainerPort: 2302,

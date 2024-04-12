@@ -11,4 +11,6 @@ type Base struct {
 	LoadBalancerIP string `json:"loadBalancerIP,omitempty"`
 
 	Ports []corev1.ServicePort `json:"ports"`
+
+	Resources corev1.ResourceRequirements `json:"resources"`
 }

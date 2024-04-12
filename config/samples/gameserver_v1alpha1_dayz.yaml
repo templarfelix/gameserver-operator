@@ -11,6 +11,13 @@ metadata:
 spec:
   storage: 10G
   #loadBalancerIP: your ipv4 public ip 0.0.0.0
+  resources:
+    requests:
+      memory: 8Gi
+      cpu: 4
+    limits:
+      memory: 16Gi
+      cpu: 8
   ports:
     - name: port-27015-tcp
       port: 27015

@@ -18,6 +18,13 @@ https://github.com/GameServerManagers/Game-Server-Configs/blob/main/dayz/server.
     hostname = "SERVERNAME";
     passwordAdmin = "ADMINPASSWORD";
 
+### How create steam login for gameserve operator
+
+> tip: to make it easier to use, create a new steam login just for the operator and disable steamguard.
+
+
+https://docs.linuxgsm.com/steamcmd#steam-user-login
+
 ## Kubernetes gameserver Dayz kind
 
 > Please Generate a GCP OR AWS public ip and use in **loadBalancerIP**
@@ -37,6 +44,13 @@ metadata:
 spec:
   storage: 10G
   #loadBalancerIP: your ipv4 public ip 0.0.0.0
+  resources:
+    requests:
+      memory: 8Gi
+      cpu: 4
+    limits:
+      memory: 16Gi
+      cpu: 8
   ports:
     - name: port-27015-tcp
       port: 27015
