@@ -8,17 +8,7 @@ rules:
   - ""
   resources:
   - configmaps
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
+  - persistentvolumeclaims
   - services
   verbs:
   - create
@@ -41,46 +31,9 @@ rules:
   - update
   - watch
 - apiGroups:
-  - ""
-  resources:
-  - persistentvolumeclaims
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
   - gameserver.templarfelix.com
   resources:
   - dayzs
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - gameserver.templarfelix.com
-  resources:
-  - dayzs/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - gameserver.templarfelix.com
-  resources:
-  - dayzs/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - gameserver.templarfelix.com
-  resources:
   - projectzomboids
   verbs:
   - create
@@ -93,12 +46,14 @@ rules:
 - apiGroups:
   - gameserver.templarfelix.com
   resources:
+  - dayzs/finalizers
   - projectzomboids/finalizers
   verbs:
   - update
 - apiGroups:
   - gameserver.templarfelix.com
   resources:
+  - dayzs/status
   - projectzomboids/status
   verbs:
   - get

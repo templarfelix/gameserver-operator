@@ -1,3 +1,35 @@
+# Project Zomboid GameServer Operator Config
+
+## Linux GSM Project Zomboid config
+
+https://github.com/GameServerManagers/LinuxGSM/blob/master/lgsm/config-default/config-lgsm/pzserver/_default.cfg
+
+### Required
+
+    steamuser="username"
+    steampass='password'
+
+## Server Project Zomboid config
+
+https://github.com/GameServerManagers/Game-Server-Configs/blob/main/pz/server.ini
+
+### Required
+
+    ServerName=My Project Zomboid Server
+    RCONPassword=CHANGE_ME
+
+### How create steam login for gameserve operator
+
+> tip: to make it easier to use, create a new steam login just for the operator and disable steamguard.
+
+
+https://docs.linuxgsm.com/steamcmd#steam-user-login
+
+## Kubernetes gameserver Project Zomboid kind
+
+
+
+```yaml
 apiVersion: gameserver.templarfelix.com/v1alpha1
 kind: ProjectZomboid
 metadata:
@@ -96,5 +128,7 @@ spec:
     gsm: |
       ## custom linuxgsm config ###
       ### https://github.com/GameServerManagers/LinuxGSM/blob/master/lgsm/config-default/config-lgsm/pzserver/_default.cfg
-      steamuser="username"
-      steampass='password'
+```
+
+## More in
+- **Project Zomboid** - [Configurations](https://linuxgsm.com/lgsm/pzserver/)

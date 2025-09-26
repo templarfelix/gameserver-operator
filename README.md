@@ -26,9 +26,18 @@ The operator is capable of managing a variety of game servers supported by the L
 popular games that are compatible, along with links to their specific configurations:
 
 - **DayZ** - [Configurations](/_docs/dayz.md)
+- **Project Zomboid** - [Configurations](/_docs/projectzomboid.md)
 - **AnotherGames** - [Open Ticket](https://github.com/templarfelix/gameserver-operator/issues/new?assignees=&labels=&projects=&template=gamerequest.md&title=)
 
 For a complete list of supported games, visit the [LinuxGSM servers page](https://linuxgsm.com/servers/).
+
+## Steam Configuration
+
+To configure Steam credentials for game server authentication, please follow the official LinuxGSM documentation:
+
+**SteamCMD Setup:** https://docs.linuxgsm.com/steamcmd
+
+This is required for the operator to authenticate with Steam and download/update game server files.
 
 ## Getting Started
 

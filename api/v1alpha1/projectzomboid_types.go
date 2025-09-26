@@ -25,17 +25,24 @@ import (
 
 // ProjectZomboidSpec defines the desired state of ProjectZomboid
 type ProjectZomboidSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	//+kubebuilder:default="gameservermanagers/gameserver:project-zomboid"
+	Image string `json:"image"`
 
-	// Foo is an example field of ProjectZomboid. Edit projectzomboid_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Base `json:",inline"`
+
+	Config ProjectZomboidConfig `json:"config,omitempty"`
+}
+
+// ProjectZomboidConfig defines configuration for Project Zomboid & LinuxGSM
+type ProjectZomboidConfig struct {
+	Server string `json:"server,omitempty"`
+	GSM    string `json:"gsm,omitempty"`
 }
 
 // ProjectZomboidStatus defines the observed state of ProjectZomboid
 type ProjectZomboidStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Conditions represent the latest available observations of an object's state
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true

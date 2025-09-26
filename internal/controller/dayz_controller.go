@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -83,7 +84,7 @@ func (r *DayzReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return reconcile.Result{}, err
 	}
 
-	if err := ReconcileServices(ctx, r.Client, instance, instance.Spec.Ports, instance.Spec.LoadBalancerIP); err != nil {
+	if err := ReconcileServices(ctx, r.Client, instance, instance.Spec.Ports); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -108,6 +109,9 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 					Labels: map[string]string{"app": instance.Name},
 				},
 				Spec: corev1.PodSpec{
+					NodeSelector: instance.Spec.NodeSelector,
+					Tolerations:  instance.Spec.Tolerations,
+					Affinity:     instance.Spec.Affinity,
 					InitContainers: []corev1.Container{
 						{
 							Name:  "fix-permissions",
@@ -160,6 +164,49 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 									Name:      "data",
 									MountPath: "/data",
 								},
+							},
+						},
+						{
+							Name:  "code-server",
+							Image: "codercom/code-server:latest",
+							Ports: []corev1.ContainerPort{
+								{
+									ContainerPort: 8080,
+									Name:          "code-server",
+									Protocol:      corev1.ProtocolTCP,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "PASSWORD",
+									Value: instance.Spec.EditorPassword,
+								},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "data",
+									MountPath: "/data",
+								},
+							},
+							ReadinessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Path: "/",
+										Port: intstr.FromInt32(8080),
+									},
+								},
+								InitialDelaySeconds: 5,
+								PeriodSeconds:       10,
+							},
+							LivenessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Path: "/",
+										Port: intstr.FromInt32(8080),
+									},
+								},
+								InitialDelaySeconds: 15,
+								PeriodSeconds:       20,
 							},
 						},
 					},
@@ -227,7 +274,7 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 	found := &appsv1.Deployment{}
 	err := r.Client.Get(ctx, client.ObjectKey{Name: k8sResource.Name, Namespace: k8sResource.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating a new Deployment %s/%s\n", k8sResource.Namespace, k8sResource.Name)
+		logger.Info("Creating a new Deployment", "Namespace", k8sResource.Namespace, "Name", k8sResource.Name)
 		err = r.Client.Create(ctx, k8sResource)
 		if err != nil {
 			return err
@@ -236,7 +283,14 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 		return err
 	}
 
-	logger.Info("Skip reconcile: Deployment %s/%s already exists", found.Namespace, found.Name)
+	// Check if the Deployment needs update
+	if !compareDeployments(found, k8sResource) {
+		logger.Info("Updating Deployment", "Namespace", found.Namespace, "Name", found.Name)
+		found.Spec = k8sResource.Spec
+		return r.Client.Update(ctx, found)
+	}
+
+	logger.Info("Skip reconcile: Deployment already exists and is up to date", "Namespace", found.Namespace, "Name", found.Name)
 
 	return nil
 }
@@ -262,18 +316,61 @@ func (r *DayzReconciler) reconcileConfigMap(ctx context.Context, instance *games
 	found := &corev1.ConfigMap{}
 	err := r.Client.Get(ctx, client.ObjectKey{Name: k8sResource.Name, Namespace: k8sResource.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating a new Configmap %s/%s\n", k8sResource.Namespace, k8sResource.Name)
+		logger.Info("Creating a new Configmap", "Namespace", k8sResource.Namespace, "Name", k8sResource.Name)
 		err = r.Client.Create(ctx, k8sResource)
 		if err != nil {
 			return err
 		}
+		// ConfigMap created successfully, no need to check for updates
+		return nil
 	} else if err != nil {
 		return err
 	}
 
-	logger.Info("Skip reconcile: Configmap %s/%s already exists", found.Namespace, found.Name)
+	// Check if the ConfigMap needs update
+	if !compareConfigMaps(found, k8sResource) {
+		logger.Info("Updating Configmap", "Namespace", found.Namespace, "Name", found.Name)
+		found.Data = k8sResource.Data
+		return r.Client.Update(ctx, found)
+	}
+
+	logger.Info("Skip reconcile: Configmap already exists and is up to date", "Namespace", found.Namespace, "极Name", found.Name)
 
 	return nil
+}
+
+// compareDeployments checks if two Deployments have the same spec
+func compareDeployments(a, b *appsv1.Deployment) bool {
+	// Simple comparison for now - just check replicas and image
+	if a.Spec.Replicas != nil && b.Spec.Replicas != nil && *a.Spec.Replicas != *b.Spec.Replicas {
+		return false
+	}
+
+	if len(a.Spec.Template.Spec.Containers) != len(b.Spec.Template.Spec.Containers) {
+		return false
+	}
+
+	for i := range a.Spec.Template.Spec.Containers {
+		if a.Spec.Template.Spec.Containers[i].Image != b.Spec.Template.Spec.Containers[i].Image {
+			return false
+		}
+	}
+
+	return true
+}
+
+// compareConfigMaps checks if two ConfigMaps have the same data
+func compareConfigMaps(a, b *corev1.ConfigMap) bool {
+	if len(a.Data) != len(b.Data) {
+		return false
+	}
+	for key, valueA := range a.Data {
+		valueB, exists := b.Data[key]
+		if !exists || valueA != valueB {
+			return false
+		}
+	}
+	return true
 }
 
 // SetupWithManager sets up the controller with the Manager.

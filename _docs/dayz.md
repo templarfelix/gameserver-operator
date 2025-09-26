@@ -27,7 +27,6 @@ https://docs.linuxgsm.com/steamcmd#steam-user-login
 
 ## Kubernetes gameserver Dayz kind
 
-> Please Generate a GCP OR AWS public ip and use in **loadBalancerIP**
 
 
 ```yaml
@@ -43,7 +42,6 @@ metadata:
   name: dayz-sample
 spec:
   storage: 10G
-  #loadBalancerIP: your ipv4 public ip 0.0.0.0
   resources:
     requests:
       memory: 8Gi
@@ -80,6 +78,27 @@ spec:
       port: 27016
       targetPort: 27016
       protocol: UDP
+
+  # Node selection configuration
+  # nodeSelector:
+  #   disktype: ssd
+  #   gpu: "true"
+  #
+  # tolerations:
+  # - key: "dedicated"
+  #   operator: "Equal"
+  #   value: "gameserver"
+  #   effect: "NoSchedule"
+  #
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #       - matchExpressions:
+  #         - key: "kubernetes.io/arch"
+  #           operator: "In"
+  #           values: ["amd64"]
+
   config:
     server: |
       ### custom dayz server config ###

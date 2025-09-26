@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -23,7 +24,7 @@ func ReconcilePVC(ctx context.Context, k8sClient client.Client, owner metav1.Obj
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			Resources: corev1.ResourceRequirements{
+			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: resource.MustParse(storage),
 				},
@@ -49,27 +50,28 @@ func ReconcilePVC(ctx context.Context, k8sClient client.Client, owner metav1.Obj
 	return nil
 }
 
-func ReconcileServices(ctx context.Context, k8sClient client.Client, owner metav1.Object, ports []corev1.ServicePort, loadBalancerIP string) error {
+func ReconcileServices(ctx context.Context, k8sClient client.Client, owner metav1.Object, ports []corev1.ServicePort) error {
+	// Add code-server port to the service
+	allPorts := append(ports, corev1.ServicePort{
+		Name:       "code-server",
+		Port:       8080,
+		TargetPort: intstr.FromInt32(8080),
+		Protocol:   corev1.ProtocolTCP,
+	})
 
-	tcpPorts, udpPorts := separatePortsByProtocol(ports)
-
-	if err := reconcileService(ctx, owner.GetName()+"-tcp", k8sClient, owner, tcpPorts, loadBalancerIP); err != nil {
-		return err
-	}
-
-	if err := reconcileService(ctx, owner.GetName()+"-udp", k8sClient, owner, udpPorts, loadBalancerIP); err != nil {
-		return err
-	}
-	return nil
+	return reconcileService(ctx, owner.GetName()+"-lb", k8sClient, owner, allPorts)
 }
 
-func reconcileService(ctx context.Context, serviceName string, k8sClient client.Client, owner metav1.Object, ports []corev1.ServicePort, loadBalancerIP string) error {
+func reconcileService(ctx context.Context, serviceName string, k8sClient client.Client, owner metav1.Object, ports []corev1.ServicePort) error {
 	logger := log.FromContext(ctx)
 
 	desired := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceName,
 			Namespace: owner.GetNamespace(),
+			Labels: map[string]string{
+				"cloud.google.com/load-balancer-type": "External",
+			},
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
@@ -80,15 +82,11 @@ func reconcileService(ctx context.Context, serviceName string, k8sClient client.
 		},
 	}
 
-	if loadBalancerIP != "" {
-		desired.Spec.LoadBalancerIP = loadBalancerIP
-	}
-
 	if err := controllerutil.SetControllerReference(owner, desired, k8sClient.Scheme()); err != nil {
 		return err
 	}
 
-	found := &corev1.PersistentVolumeClaim{}
+	found := &corev1.Service{}
 	err := k8sClient.Get(ctx, types.NamespacedName{Name: serviceName, Namespace: owner.GetNamespace()}, found)
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("Creating a new Service", "Namespace", owner.GetNamespace(), "Name", desired)
