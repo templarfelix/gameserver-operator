@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package utils contains test utilities and helper functions
 package utils
 
 import (
@@ -33,7 +34,7 @@ const (
 )
 
 func warnError(err error) {
-	fmt.Fprintf(os.Stdout, "warning: %v\n", err)
+	fmt.Fprintf(os.Stdout, "warning: %v\n", err) //nolint:errcheck
 }
 
 // InstallPrometheusOperator installs the prometheus Operator to be used to export the enabled metrics.
@@ -50,12 +51,12 @@ func Run(cmd *exec.Cmd) ([]byte, error) {
 	cmd.Dir = dir
 
 	if err := os.Chdir(cmd.Dir); err != nil {
-		fmt.Fprintf(os.Stdout, "chdir dir: %s\n", err)
+		fmt.Fprintf(os.Stdout, "chdir dir: %s\n", err) //nolint:errcheck
 	}
 
 	cmd.Env = append(os.Environ(), "GO111MODULE=on")
 	command := strings.Join(cmd.Args, " ")
-	fmt.Fprintf(os.Stdout, "running: %s\n", command)
+	fmt.Fprintf(os.Stdout, "running: %s\n", command) //nolint:errcheck
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return output, fmt.Errorf("%s failed with error: (%v) %s", command, err, string(output))
@@ -101,7 +102,7 @@ func InstallCertManager() error {
 	return err
 }
 
-// LoadImageToKindCluster loads a local docker image to the kind cluster
+// LoadImageToKindClusterWithName loads a local docker image to the kind cluster
 func LoadImageToKindClusterWithName(name string) error {
 	cluster := "kind"
 	if v, ok := os.LookupEnv("KIND_CLUSTER"); ok {
@@ -133,6 +134,6 @@ func GetProjectDir() (string, error) {
 	if err != nil {
 		return wd, err
 	}
-	wd = strings.Replace(wd, "/test/e2e", "", -1)
+	wd = strings.ReplaceAll(wd, "/test/e2e", "")
 	return wd, nil
 }

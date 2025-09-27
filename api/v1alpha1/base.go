@@ -16,9 +16,6 @@ type StorageConfig struct {
 
 // Persistence configures the persistent volume for game data
 type Persistence struct {
-	// Storage size for the persistent volume (deprecated: use storageConfig.size)
-	Storage string `json:"storage,omitempty"`
-
 	// Storage configuration
 	StorageConfig StorageConfig `json:"storageConfig,omitempty"`
 
@@ -26,6 +23,7 @@ type Persistence struct {
 	PreserveOnDelete bool `json:"preserveOnDelete,omitempty"`
 }
 
+// Base contains common configuration fields for game server CRDs
 type Base struct {
 	Persistence Persistence `json:"persistence,omitempty"`
 

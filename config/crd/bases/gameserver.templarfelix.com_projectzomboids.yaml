@@ -960,10 +960,6 @@ spec:
                   preserveOnDelete:
                     default: false
                     type: boolean
-                  storage:
-                    description: 'Storage size for the persistent volume (deprecated:
-                      use storageConfig.size)'
-                    type: string
                   storageConfig:
                     description: Storage configuration
                     properties:

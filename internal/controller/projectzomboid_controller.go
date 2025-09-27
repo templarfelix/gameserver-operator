@@ -53,11 +53,11 @@ type ProjectZomboidReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *ProjectZomboidReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx).WithValues("projectzomboid", req.NamespacedName.Name)
+	logger := log.FromContext(ctx).WithValues("projectzomboid", req.Name)
 
 	instance := &gameserverv1alpha1.ProjectZomboid{}
 
-	err := r.Client.Get(ctx, req.NamespacedName, instance)
+	err := r.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return reconcile.Result{}, nil
@@ -72,7 +72,7 @@ func (r *ProjectZomboidReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			// Perform cleanup
 			pvcName := instance.Name + "-pvc"
 			pvc := &corev1.PersistentVolumeClaim{}
-			err := r.Client.Get(ctx, types.NamespacedName{Name: pvcName, Namespace: instance.Namespace}, pvc)
+			err := r.Get(ctx, types.NamespacedName{Name: pvcName, Namespace: instance.Namespace}, pvc)
 			if err != nil && !errors.IsNotFound(err) {
 				logger.Error(err, "Failed to get PVC")
 				return reconcile.Result{}, err
@@ -81,7 +81,7 @@ func (r *ProjectZomboidReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				if instance.Spec.Persistence.PreserveOnDelete {
 					// Remove owner reference to preserve PVC
 					pvc.OwnerReferences = nil // Remove all owner refs, or filter
-					if err := r.Client.Update(ctx, pvc); err != nil {
+					if err := r.Update(ctx, pvc); err != nil {
 						logger.Error(err, "Failed to remove owner reference from PVC")
 						return reconcile.Result{}, err
 					}
@@ -91,7 +91,7 @@ func (r *ProjectZomboidReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 			// Remove finalizer
 			controllerutil.RemoveFinalizer(instance, finalizer)
-			if err := r.Client.Update(ctx, instance); err != nil {
+			if err := r.Update(ctx, instance); err != nil {
 				logger.Error(err, "Failed to remove finalizer")
 				return reconcile.Result{}, err
 			}
@@ -106,7 +106,7 @@ func (r *ProjectZomboidReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// Add finalizer if not present
 	if !controllerutil.ContainsFinalizer(instance, finalizer) {
 		controllerutil.AddFinalizer(instance, finalizer)
-		if err := r.Client.Update(ctx, instance); err != nil {
+		if err := r.Update(ctx, instance); err != nil {
 			logger.Error(err, "Failed to add finalizer")
 			return reconcile.Result{}, err
 		}
@@ -119,7 +119,12 @@ func (r *ProjectZomboidReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return reconcile.Result{}, err
 	}
 
-	if err := r.reconcileConfigMap(ctx, instance); err != nil {
+	configMapName := instance.Name + "-configmap"
+	configData := map[string]string{
+		"pzserver.cfg": instance.Spec.Config.GSM,
+		"server.ini":   instance.Spec.Config.Server,
+	}
+	if err := ReconcileConfigMap(ctx, r.Client, instance, configMapName, configData); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -164,8 +169,8 @@ func (r *ProjectZomboidReconciler) reconcileDeployment(ctx context.Context, inst
 								mkdir -p /data/serverfiles/ &&
 								cp /tmp/config-gsm/pzserver.cfg /data/config-lgsm/pzserver/pzserver.cfg &&
 								cp /tmp/config-server/server.ini /data/serverfiles/server.ini &&
-								chown 1000:1000 /data/config-lgsm/pzserver/pzserver.cfg &&
-								chown 1000:1000 /data/serverfiles/server.ini
+								chown -R 1000:1000 /data/config-lgsm/pzserver/ &&
+								chown -R 1000:1000 /data/serverfiles/
 								`,
 							},
 							VolumeMounts: []corev1.VolumeMount{
@@ -189,30 +194,19 @@ func (r *ProjectZomboidReconciler) reconcileDeployment(ctx context.Context, inst
 						},
 					},
 					Containers: []corev1.Container{
-						{
-							Name:      "server",
-							Image:     instance.Spec.Image,
-							Resources: instance.Spec.Resources,
-							Ports: []corev1.ContainerPort{
-								{
-									ContainerPort: 16261,
-									Name:          "port-16261-tcp",
-									Protocol:      corev1.ProtocolTCP,
-								},
-								{
-									ContainerPort: 16262,
-									Name:          "port-16262-udp",
-									Protocol:      corev1.ProtocolUDP,
-								},
+						getSecureGameServerContainer("server", instance.Spec.Image, instance.Spec.Resources, []corev1.ContainerPort{
+							{
+								ContainerPort: 16261,
+								Name:          "port-16261-tcp",
+								Protocol:      corev1.ProtocolTCP,
 							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "data",
-									MountPath: "/data",
-								},
+							{
+								ContainerPort: 16262,
+								Name:          "port-16262-udp",
+								Protocol:      corev1.ProtocolUDP,
 							},
-						},
-						GetCodeServerContainer(instance.Spec.EditorPassword),
+						}),
+						getSecureCodeServerContainer(instance.Spec.EditorPassword),
 					},
 					Volumes: []corev1.Volume{
 						{
@@ -275,10 +269,10 @@ func (r *ProjectZomboidReconciler) reconcileDeployment(ctx context.Context, inst
 	}
 
 	found := &appsv1.Deployment{}
-	err := r.Client.Get(ctx, client.ObjectKey{Name: k8sResource.Name, Namespace: k8sResource.Namespace}, found)
+	err := r.Get(ctx, client.ObjectKey{Name: k8sResource.Name, Namespace: k8sResource.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("Creating a new Deployment", "Namespace", k8sResource.Namespace, "Name", k8sResource.Name)
-		err = r.Client.Create(ctx, k8sResource)
+		err = r.Create(ctx, k8sResource)
 		if err != nil {
 			return err
 		}
@@ -287,63 +281,24 @@ func (r *ProjectZomboidReconciler) reconcileDeployment(ctx context.Context, inst
 	}
 
 	// Check if the Deployment needs update
-	if !compareDeployments(found, k8sResource) {
+	if !CompareDeployments(found, k8sResource) {
 		logger.Info("Updating Deployment", "Namespace", found.Namespace, "Name", found.Name)
 		found.Spec = k8sResource.Spec
-		return r.Client.Update(ctx, found)
+		return r.Update(ctx, found)
 	}
 
-	logger.Info("Skip reconcile: Deployment already exists and is up to date", "Namespace", found.Namespace, "Name", found.Name)
-
-	return nil
-}
-
-func (r *ProjectZomboidReconciler) reconcileConfigMap(ctx context.Context, instance *gameserverv1alpha1.ProjectZomboid) error {
-	logger := log.FromContext(ctx)
-
-	k8sResource := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      instance.Name + "-configmap",
-			Namespace: instance.Namespace,
-		},
-		Data: map[string]string{
-			"pzserver.cfg": instance.Spec.Config.GSM,
-			"server.ini":   instance.Spec.Config.Server,
-		},
-	}
-
-	if err := controllerutil.SetControllerReference(instance, k8sResource, r.Scheme); err != nil {
-		return err
-	}
-
-	found := &corev1.ConfigMap{}
-	err := r.Client.Get(ctx, client.ObjectKey{Name: k8sResource.Name, Namespace: k8sResource.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating a new Configmap", "Namespace", k8sResource.Namespace, "Name", k8sResource.Name)
-		err = r.Client.Create(ctx, k8sResource)
-		if err != nil {
-			return err
-		}
-		// ConfigMap created successfully, no need to check for updates
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	// Check if the ConfigMap needs update
-	if !compareConfigMaps(found, k8sResource) {
-		logger.Info("Updating Configmap", "Namespace", found.Namespace, "Name", found.Name)
-		found.Data = k8sResource.Data
-		return r.Client.Update(ctx, found)
-	}
-
-	logger.Info("Skip reconcile: Configmap already exists and is up to date", "Namespace", found.Namespace, "Name", found.Name)
+	logger.V(4).Info("Deployment already exists and is up to date", "namespace", found.Namespace, "name", found.Name)
 
 	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ProjectZomboidReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	// Temporarily disabled webhooks due to certificate issues
+	// if err := (&ProjectZomboidValidator{}).SetupWebhookWithManager(mgr); err != nil {
+	//	return err
+	// }
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gameserverv1alpha1.ProjectZomboid{}).
 		Complete(r)

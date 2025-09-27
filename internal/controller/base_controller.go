@@ -13,13 +13,26 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/go-logr/logr"
 	gameserverv1alpha1 "github.com/templarfelix/gameserver-operator/api/v1alpha1"
 )
 
-func pointerString(s string) *string {
-	return &s
+// initializeDefaultPersistence ensures that all persistence fields have safe defaults
+func initializeDefaultPersistence(persistence *gameserverv1alpha1.Persistence, logger logr.Logger, ownerName string) {
+	// Ensure storageConfig is initialized with defaults
+	if persistence.StorageConfig.Size == "" {
+		logger.V(4).Info("Setting default storage size", "owner", ownerName, "size", "10G")
+		persistence.StorageConfig.Size = "10G"
+	}
+
+	// Validate that the size can be parsed
+	if _, err := resource.ParseQuantity(persistence.StorageConfig.Size); err != nil {
+		logger.Error(err, "Invalid storage size, using default", "owner", ownerName, "size", persistence.StorageConfig.Size)
+		persistence.StorageConfig.Size = "10G"
+	}
 }
 
+// ReconcilePVC creates or updates a PersistentVolumeClaim for game data storage
 func ReconcilePVC(ctx context.Context, k8sClient client.Client, owner metav1.Object, persistence *gameserverv1alpha1.Persistence) error {
 	logger := log.FromContext(ctx)
 	pvcName := owner.GetName() + "-pvc"
@@ -30,47 +43,28 @@ func ReconcilePVC(ctx context.Context, k8sClient client.Client, owner metav1.Obj
 		return fmt.Errorf("persistence configuration cannot be nil")
 	}
 
+	// Initialize defaults and validate configuration
+	initializeDefaultPersistence(persistence, logger, owner.GetName())
+
+	// Create desired PVC spec
+	storageSize := persistence.StorageConfig.Size
+	parsedSize, err := resource.ParseQuantity(storageSize)
+	if err != nil {
+		logger.Error(err, "Invalid storage size, using default", "size", storageSize)
+		parsedSize, _ = resource.ParseQuantity("10G") // This should not fail
+	}
+
+	var storageClassName *string
+	if persistence.StorageConfig.StorageClassName != "" {
+		storageClassName = &persistence.StorageConfig.StorageClassName
+	}
+
 	desired := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      pvcName,
 			Namespace: owner.GetNamespace(),
 		},
-	}
-
-	{
-		// Get storage size with fallback logic (new structure first, then deprecated)
-		storageSize := persistence.StorageConfig.Size
-		logger.V(4).Info("Persistence values", "storageConfig.Size", storageSize, "storage", persistence.Storage)
-
-		if storageSize == "" {
-			logger.Info("Using deprecated storage field", "storage", persistence.Storage)
-			storageSize = persistence.Storage
-		}
-		if storageSize == "" {
-			logger.Info("Using default storage size", "default", "10G")
-			storageSize = "10G" // default
-		}
-
-		// Final safety check for storageSize - this should never happen but prevents panic
-		if storageSize == "" {
-			logger.Error(nil, "StorageSize is still empty after fallbacks, this should never happen", "owner", owner.GetName())
-			storageSize = "10G"
-		}
-
-		// Validate the storage size can be parsed before calling MustParse
-		parsedSize, err := resource.ParseQuantity(storageSize)
-		if err != nil {
-			logger.Error(err, "Invalid storage size format, using default", "storageSize", storageSize, "owner", owner.GetName())
-			parsedSize = resource.MustParse("10G")
-		}
-
-		// Get storage class name with fallback logic
-		var storageClassName *string
-		if persistence.StorageConfig.StorageClassName != "" {
-			storageClassName = &persistence.StorageConfig.StorageClassName
-		}
-
-		desired.Spec = corev1.PersistentVolumeClaimSpec{
+		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 			StorageClassName: storageClassName,
 			Resources: corev1.VolumeResourceRequirements{
@@ -78,7 +72,7 @@ func ReconcilePVC(ctx context.Context, k8sClient client.Client, owner metav1.Obj
 					corev1.ResourceStorage: parsedSize,
 				},
 			},
-		}
+		},
 	}
 
 	if err := controllerutil.SetControllerReference(owner, desired, k8sClient.Scheme()); err != nil {
@@ -87,18 +81,19 @@ func ReconcilePVC(ctx context.Context, k8sClient client.Client, owner metav1.Obj
 
 	// Check if PVC already exists
 	found := &corev1.PersistentVolumeClaim{}
-	err := k8sClient.Get(ctx, types.NamespacedName{Name: pvcName, Namespace: owner.GetNamespace()}, found)
+	err = k8sClient.Get(ctx, types.NamespacedName{Name: pvcName, Namespace: owner.GetNamespace()}, found)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating a new PVC", "Namespace", owner.GetNamespace(), "Name", pvcName)
+		logger.Info("Creating new PVC", "namespace", owner.GetNamespace(), "name", pvcName)
 		return k8sClient.Create(ctx, desired)
 	} else if err != nil {
 		return err
 	}
 
-	logger.Info("Skip reconcile: PVC already exists", "Namespace", found.Namespace, "Name", found.Name)
+	logger.V(4).Info("PVC already exists", "namespace", found.Namespace, "name", found.Name)
 	return nil
 }
 
+// ReconcileServices creates or updates Services for exposing the game server
 func ReconcileServices(ctx context.Context, k8sClient client.Client, owner metav1.Object, ports []corev1.ServicePort, loadBalancerIP string) error {
 	// Add code-server port to TCP service
 	tcpPorts, udpPorts := separatePortsByProtocol(ports)
@@ -165,51 +160,12 @@ func reconcileService(ctx context.Context, serviceName string, k8sClient client.
 
 func separatePortsByProtocol(ports []corev1.ServicePort) (tcpPorts []corev1.ServicePort, udpPorts []corev1.ServicePort) {
 	for _, port := range ports {
-		if port.Protocol == corev1.ProtocolTCP {
+		switch port.Protocol {
+		case corev1.ProtocolTCP:
 			tcpPorts = append(tcpPorts, port)
-		} else if port.Protocol == corev1.ProtocolUDP {
+		case corev1.ProtocolUDP:
 			udpPorts = append(udpPorts, port)
 		}
 	}
 	return tcpPorts, udpPorts
-}
-
-func GetCodeServerContainer(password string) corev1.Container {
-	return corev1.Container{
-		Name:  "code-server",
-		Image: "codercom/code-server:latest",
-		Ports: []corev1.ContainerPort{{
-			ContainerPort: 8080,
-			Name:          "code-server",
-			Protocol:      corev1.ProtocolTCP,
-		}},
-		Env: []corev1.EnvVar{{
-			Name:  "PASSWORD",
-			Value: password,
-		}},
-		VolumeMounts: []corev1.VolumeMount{{
-			Name:      "data",
-			MountPath: "/data",
-		}},
-		ReadinessProbe: &corev1.Probe{
-			ProbeHandler: corev1.ProbeHandler{
-				HTTPGet: &corev1.HTTPGetAction{
-					Path: "/",
-					Port: intstr.FromInt32(8080),
-				},
-			},
-			InitialDelaySeconds: 5,
-			PeriodSeconds:       10,
-		},
-		LivenessProbe: &corev1.Probe{
-			ProbeHandler: corev1.ProbeHandler{
-				HTTPGet: &corev1.HTTPGetAction{
-					Path: "/",
-					Port: intstr.FromInt32(8080),
-				},
-			},
-			InitialDelaySeconds: 15,
-			PeriodSeconds:       20,
-		},
-	}
 }
