@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -27,6 +28,6 @@ import (
 // Run e2e tests using the Ginkgo runner.
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
-	fmt.Fprintf(GinkgoWriter, "Starting gameserver-operator suite\n")
+	fmt.Fprintf(os.Stdout, "Starting gameserver-operator suite\n")
 	RunSpecs(t, "e2e suite")
 }

@@ -50,19 +50,33 @@ func ReconcilePVC(ctx context.Context, k8sClient client.Client, owner metav1.Obj
 	return nil
 }
 
-func ReconcileServices(ctx context.Context, k8sClient client.Client, owner metav1.Object, ports []corev1.ServicePort) error {
-	// Add code-server port to the service
-	allPorts := append(ports, corev1.ServicePort{
+func ReconcileServices(ctx context.Context, k8sClient client.Client, owner metav1.Object, ports []corev1.ServicePort, loadBalancerIP string) error {
+	// Add code-server port to TCP service
+	tcpPorts, udpPorts := separatePortsByProtocol(ports)
+
+	// Create TCP service with code-server port
+	tcpPorts = append(tcpPorts, corev1.ServicePort{
 		Name:       "code-server",
 		Port:       8080,
 		TargetPort: intstr.FromInt32(8080),
 		Protocol:   corev1.ProtocolTCP,
 	})
 
-	return reconcileService(ctx, owner.GetName()+"-lb", k8sClient, owner, allPorts)
+	// Create separate services for TCP and UDP
+	if err := reconcileService(ctx, owner.GetName()+"-tcp", k8sClient, owner, tcpPorts, loadBalancerIP); err != nil {
+		return err
+	}
+
+	if len(udpPorts) > 0 {
+		if err := reconcileService(ctx, owner.GetName()+"-udp", k8sClient, owner, udpPorts, loadBalancerIP); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func reconcileService(ctx context.Context, serviceName string, k8sClient client.Client, owner metav1.Object, ports []corev1.ServicePort) error {
+func reconcileService(ctx context.Context, serviceName string, k8sClient client.Client, owner metav1.Object, ports []corev1.ServicePort, loadBalancerIP string) error {
 	logger := log.FromContext(ctx)
 
 	desired := &corev1.Service{
@@ -77,8 +91,9 @@ func reconcileService(ctx context.Context, serviceName string, k8sClient client.
 			Selector: map[string]string{
 				"app": owner.GetName(),
 			},
-			Type:  corev1.ServiceTypeLoadBalancer,
-			Ports: ports,
+			Type:           corev1.ServiceTypeLoadBalancer,
+			LoadBalancerIP: loadBalancerIP,
+			Ports:          ports,
 		},
 	}
 
@@ -89,7 +104,7 @@ func reconcileService(ctx context.Context, serviceName string, k8sClient client.
 	found := &corev1.Service{}
 	err := k8sClient.Get(ctx, types.NamespacedName{Name: serviceName, Namespace: owner.GetNamespace()}, found)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info("Creating a new Service", "Namespace", owner.GetNamespace(), "Name", desired)
+		logger.Info("Creating a new Service", "Namespace", owner.GetNamespace(), "Name", serviceName)
 		return k8sClient.Create(ctx, desired)
 	} else if err != nil {
 		return err

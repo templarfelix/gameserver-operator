@@ -51,7 +51,9 @@ var _ = Describe("ProjectZomboid Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
+					Spec: gameserverv1alpha1.ProjectZomboidSpec{
+						Image: "gameservermanagers/gameserver:project-zomboid",
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}

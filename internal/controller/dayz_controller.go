@@ -84,7 +84,7 @@ func (r *DayzReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return reconcile.Result{}, err
 	}
 
-	if err := ReconcileServices(ctx, r.Client, instance, instance.Spec.Ports); err != nil {
+	if err := ReconcileServices(ctx, r.Client, instance, instance.Spec.Ports, instance.Spec.LoadBalancerIP); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -353,6 +353,15 @@ func compareDeployments(a, b *appsv1.Deployment) bool {
 	for i := range a.Spec.Template.Spec.Containers {
 		if a.Spec.Template.Spec.Containers[i].Image != b.Spec.Template.Spec.Containers[i].Image {
 			return false
+		}
+		if a.Spec.Template.Spec.Containers[i].Name == "code-server" {
+			for j := range a.Spec.Template.Spec.Containers[i].Env {
+				if a.Spec.Template.Spec.Containers[i].Env[j].Name == "PASSWORD" {
+					if a.Spec.Template.Spec.Containers[i].Env[j].Value != b.Spec.Template.Spec.Containers[i].Env[j].Value {
+						return false
+					}
+				}
+			}
 		}
 	}
 

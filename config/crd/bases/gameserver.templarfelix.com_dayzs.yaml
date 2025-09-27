@@ -939,6 +939,8 @@ spec:
               image:
                 default: gameservermanagers/gameserver:dayz
                 type: string
+              loadBalancerIP:
+                type: string
               nodeSelector:
                 additionalProperties:
                   type: string

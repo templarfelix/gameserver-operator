@@ -59,6 +59,12 @@ spec:
       targetPort: 16262
       protocol: UDP
 
+  # Load balancer IP configuration
+  # loadBalancerIP: your-public-ip-address
+
+  # Code server editor password
+  # editorPassword: your-editor-password
+
   # Node selection configuration
   # nodeSelector:
   #   disktype: ssd

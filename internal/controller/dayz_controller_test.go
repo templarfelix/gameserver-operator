@@ -51,7 +51,9 @@ var _ = Describe("Dayz Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
+					Spec: gameserverv1alpha1.DayzSpec{
+						Image: "gameservermanagers/gameserver:dayz",
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}

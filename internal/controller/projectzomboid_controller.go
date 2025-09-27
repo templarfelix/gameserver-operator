@@ -77,7 +77,7 @@ func (r *ProjectZomboidReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return reconcile.Result{}, err
 	}
 
-	if err := ReconcileServices(ctx, r.Client, instance, instance.Spec.Ports); err != nil {
+	if err := ReconcileServices(ctx, r.Client, instance, instance.Spec.Ports, instance.Spec.LoadBalancerIP); err != nil {
 		return reconcile.Result{}, err
 	}
 

@@ -1,0 +1,18 @@
+version: "2"
+
+linters:
+  default: recommended
+  exclusions:
+    generated: strict
+
+formatters:
+  enable:
+    - gofmt
+  settings:
+    gofmt:
+      simplify: true
+
+output:
+  formats:
+    line:
+  sort-order: ['linter', 'file']
