@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**IMPORTANT NOTE: This entire project is in English.** All code comments, commit messages, documentation, and communication must be in English. No Portuguese or other languages are allowed in this codebase.
+
 ## Development Commands
 
 **Build and Test:**
@@ -39,13 +41,23 @@ This is a Kubernetes operator built with Kubebuilder/Operator SDK for managing L
 
 **Custom Resource Structure:**
 Each game CRD includes:
-- Base configuration (storage, resources, ports)
+- Base configuration (persistence, resources, ports)
 - Game-specific configuration
 - Status conditions
 
+**Persistence Configuration:**
+
+```yaml
+persistence:
+  storageConfig:
+    size: 10G                    # (default: "10G") Storage size
+    storageClassName: standard   # Storage class name (optional)
+  preserveOnDelete: false        # Preserve PVC when CR is deleted (default: false)
+```
+
 **Reconciliation Pattern:**
 Controllers follow standard Kubernetes operator pattern:
-1. Reconcile PersistentVolumeClaim for game data
+1. Reconcile PersistentVolumeClaim for game data (respects preserveOnDelete)
 2. Reconcile Services (TCP/UDP separated)
 3. Manage game server Pod deployment
 

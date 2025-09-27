@@ -19,7 +19,8 @@ package controller
 import (
 	"context"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/types"
+	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -60,19 +61,69 @@ type DayzReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
 func (r *DayzReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx).WithValues("dayz", req.NamespacedName.Name)
 
 	instance := &gameserverv1alpha1.Dayz{}
 
 	err := r.Client.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Objeto não encontrado, pode ter sido deletado após o request de reconciliação. Sair do processamento.
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, err
 	}
-	if err := ReconcilePVC(ctx, r.Client, instance, instance.Spec.Storage); err != nil {
+
+	const finalizer = "gameserver.templarfelix.com/finalizer"
+
+	if instance.DeletionTimestamp != nil {
+		if controllerutil.ContainsFinalizer(instance, finalizer) {
+			// Perform cleanup
+			pvcName := instance.Name + "-pvc"
+			pvc := &corev1.PersistentVolumeClaim{}
+			err := r.Client.Get(ctx, types.NamespacedName{Name: pvcName, Namespace: instance.Namespace}, pvc)
+			if err != nil && !errors.IsNotFound(err) {
+				logger.Error(err, "Failed to get PVC")
+				return reconcile.Result{}, err
+			}
+			if err == nil { // PVC exists
+				if instance.Spec.Persistence.PreserveOnDelete {
+					// Remove owner reference to preserve PVC
+					pvc.OwnerReferences = nil // Remove all owner refs
+					if err := r.Client.Update(ctx, pvc); err != nil {
+						logger.Error(err, "Failed to remove owner reference from PVC")
+						return reconcile.Result{}, err
+					}
+					logger.Info("Preserved PVC by removing owner reference")
+				} // else let GC delete it
+			}
+
+			// Remove finalizer
+			controllerutil.RemoveFinalizer(instance, finalizer)
+			if err := r.Client.Update(ctx, instance); err != nil {
+				logger.Error(err, "Failed to remove finalizer")
+				return reconcile.Result{}, err
+			}
+			logger.Info("Finalizer removed, resources will be cleaned up")
+			return reconcile.Result{}, nil
+		}
+
+		// No finalizer present during deletion, proceed to delete
+		return reconcile.Result{}, nil
+	}
+
+	// Add finalizer if not present
+	if !controllerutil.ContainsFinalizer(instance, finalizer) {
+		controllerutil.AddFinalizer(instance, finalizer)
+		if err := r.Client.Update(ctx, instance); err != nil {
+			logger.Error(err, "Failed to add finalizer")
+			return reconcile.Result{}, err
+		}
+		logger.Info("Added finalizer")
+		return reconcile.Result{Requeue: true}, nil
+	}
+
+	// Normal reconciliation
+	if err := ReconcilePVC(ctx, r.Client, instance, &instance.Spec.Persistence); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -166,49 +217,7 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 								},
 							},
 						},
-						{
-							Name:  "code-server",
-							Image: "codercom/code-server:latest",
-							Ports: []corev1.ContainerPort{
-								{
-									ContainerPort: 8080,
-									Name:          "code-server",
-									Protocol:      corev1.ProtocolTCP,
-								},
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "PASSWORD",
-									Value: instance.Spec.EditorPassword,
-								},
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "data",
-									MountPath: "/data",
-								},
-							},
-							ReadinessProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									HTTPGet: &corev1.HTTPGetAction{
-										Path: "/",
-										Port: intstr.FromInt32(8080),
-									},
-								},
-								InitialDelaySeconds: 5,
-								PeriodSeconds:       10,
-							},
-							LivenessProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									HTTPGet: &corev1.HTTPGetAction{
-										Path: "/",
-										Port: intstr.FromInt32(8080),
-									},
-								},
-								InitialDelaySeconds: 15,
-								PeriodSeconds:       20,
-							},
-						},
+						GetCodeServerContainer(instance.Spec.EditorPassword),
 					},
 					Volumes: []corev1.Volume{
 						{
@@ -290,7 +299,7 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 		return r.Client.Update(ctx, found)
 	}
 
-	logger.Info("Skip reconcile: Deployment already exists and is up to date", "Namespace", found.Namespace, "Name", found.Name)
+	logger.Info("Deployment already exists and is up to date", "Namespace", found.Namespace, "Name", found.Name)
 
 	return nil
 }
@@ -334,35 +343,41 @@ func (r *DayzReconciler) reconcileConfigMap(ctx context.Context, instance *games
 		return r.Client.Update(ctx, found)
 	}
 
-	logger.Info("Skip reconcile: Configmap already exists and is up to date", "Namespace", found.Namespace, "极Name", found.Name)
+	logger.Info("Skip reconcile: Configmap already exists and is up to date", "Namespace", found.Namespace, "Name", found.Name)
 
 	return nil
 }
 
-// compareDeployments checks if two Deployments have the same spec
+// compareDeployments checks if two Deployments have equivalent specs
+// This is a simplified comparison - for production use, consider using reflect.DeepEqual
+// or a dedicated comparison library
 func compareDeployments(a, b *appsv1.Deployment) bool {
-	// Simple comparison for now - just check replicas and image
-	if a.Spec.Replicas != nil && b.Spec.Replicas != nil && *a.Spec.Replicas != *b.Spec.Replicas {
+	// Compare replicas (default to 1 if nil)
+	aReplicas := int32(1)
+	bReplicas := int32(1)
+	if a.Spec.Replicas != nil {
+		aReplicas = *a.Spec.Replicas
+	}
+	if b.Spec.Replicas != nil {
+		bReplicas = *b.Spec.Replicas
+	}
+	if aReplicas != bReplicas {
 		return false
 	}
 
-	if len(a.Spec.Template.Spec.Containers) != len(b.Spec.Template.Spec.Containers) {
+	// Compare selector labels
+	if !reflect.DeepEqual(a.Spec.Selector, b.Spec.Selector) {
 		return false
 	}
 
-	for i := range a.Spec.Template.Spec.Containers {
-		if a.Spec.Template.Spec.Containers[i].Image != b.Spec.Template.Spec.Containers[i].Image {
-			return false
-		}
-		if a.Spec.Template.Spec.Containers[i].Name == "code-server" {
-			for j := range a.Spec.Template.Spec.Containers[i].Env {
-				if a.Spec.Template.Spec.Containers[i].Env[j].Name == "PASSWORD" {
-					if a.Spec.Template.Spec.Containers[i].Env[j].Value != b.Spec.Template.Spec.Containers[i].Env[j].Value {
-						return false
-					}
-				}
-			}
-		}
+	// Compare pod template spec deeply
+	if !reflect.DeepEqual(a.Spec.Template.Spec, b.Spec.Template.Spec) {
+		return false
+	}
+
+	// Compare pod template metadata labels
+	if !reflect.DeepEqual(a.Spec.Template.ObjectMeta.Labels, b.Spec.Template.ObjectMeta.Labels) {
+		return false
 	}
 
 	return true

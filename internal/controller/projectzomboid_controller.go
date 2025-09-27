@@ -19,7 +19,7 @@ package controller
 import (
 	"context"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -53,19 +53,69 @@ type ProjectZomboidReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *ProjectZomboidReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx).WithValues("projectzomboid", req.NamespacedName.Name)
 
 	instance := &gameserverv1alpha1.ProjectZomboid{}
 
 	err := r.Client.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Objeto não encontrado, pode ter sido deletado após o request de reconciliação. Sair do processamento.
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, err
 	}
-	if err := ReconcilePVC(ctx, r.Client, instance, instance.Spec.Storage); err != nil {
+
+	const finalizer = "gameserver.templarfelix.com/finalizer"
+
+	if instance.DeletionTimestamp != nil {
+		if controllerutil.ContainsFinalizer(instance, finalizer) {
+			// Perform cleanup
+			pvcName := instance.Name + "-pvc"
+			pvc := &corev1.PersistentVolumeClaim{}
+			err := r.Client.Get(ctx, types.NamespacedName{Name: pvcName, Namespace: instance.Namespace}, pvc)
+			if err != nil && !errors.IsNotFound(err) {
+				logger.Error(err, "Failed to get PVC")
+				return reconcile.Result{}, err
+			}
+			if err == nil { // PVC exists
+				if instance.Spec.Persistence.PreserveOnDelete {
+					// Remove owner reference to preserve PVC
+					pvc.OwnerReferences = nil // Remove all owner refs, or filter
+					if err := r.Client.Update(ctx, pvc); err != nil {
+						logger.Error(err, "Failed to remove owner reference from PVC")
+						return reconcile.Result{}, err
+					}
+					logger.Info("Preserved PVC by removing owner reference")
+				} // else let GC delete it
+			}
+
+			// Remove finalizer
+			controllerutil.RemoveFinalizer(instance, finalizer)
+			if err := r.Client.Update(ctx, instance); err != nil {
+				logger.Error(err, "Failed to remove finalizer")
+				return reconcile.Result{}, err
+			}
+			logger.Info("Finalizer removed, resources will be cleaned up")
+			return reconcile.Result{}, nil
+		}
+
+		// No finalizer present during deletion, proceed to delete
+		return reconcile.Result{}, nil
+	}
+
+	// Add finalizer if not present
+	if !controllerutil.ContainsFinalizer(instance, finalizer) {
+		controllerutil.AddFinalizer(instance, finalizer)
+		if err := r.Client.Update(ctx, instance); err != nil {
+			logger.Error(err, "Failed to add finalizer")
+			return reconcile.Result{}, err
+		}
+		logger.Info("Added finalizer")
+		return reconcile.Result{Requeue: true}, nil
+	}
+
+	// Normal reconciliation
+	if err := ReconcilePVC(ctx, r.Client, instance, &instance.Spec.Persistence); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -162,49 +212,7 @@ func (r *ProjectZomboidReconciler) reconcileDeployment(ctx context.Context, inst
 								},
 							},
 						},
-						{
-							Name:  "code-server",
-							Image: "codercom/code-server:latest",
-							Ports: []corev1.ContainerPort{
-								{
-									ContainerPort: 8080,
-									Name:          "code-server",
-									Protocol:      corev1.ProtocolTCP,
-								},
-							},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "PASSWORD",
-									Value: instance.Spec.EditorPassword,
-								},
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "data",
-									MountPath: "/data",
-								},
-							},
-							ReadinessProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									HTTPGet: &corev1.HTTPGetAction{
-										Path: "/",
-										Port: intstr.FromInt32(8080),
-									},
-								},
-								InitialDelaySeconds: 5,
-								PeriodSeconds:       10,
-							},
-							LivenessProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									HTTPGet: &corev1.HTTPGetAction{
-										Path: "/",
-										Port: intstr.FromInt32(8080),
-									},
-								},
-								InitialDelaySeconds: 15,
-								PeriodSeconds:       20,
-							},
-						},
+						GetCodeServerContainer(instance.Spec.EditorPassword),
 					},
 					Volumes: []corev1.Volume{
 						{

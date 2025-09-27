@@ -1,18 +1,27 @@
-version: "2"
+version: 2
+
+run:
+  timeout: 5m
 
 linters:
-  default: recommended
-  exclusions:
-    generated: strict
-
-formatters:
+  disable-all: true
   enable:
-    - gofmt
-  settings:
-    gofmt:
-      simplify: true
+    - errcheck
+    - govet
+    - ineffassign
+    - misspell
+    - revive
+    - staticcheck
+    - unconvert
+    - unused
 
-output:
-  formats:
-    line:
-  sort-order: ['linter', 'file']
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - path: "api/*"
+      linters:
+        - lll
+    - path: "internal/*"
+      linters:
+        - dupl
+        - lll

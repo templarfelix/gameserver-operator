@@ -9,7 +9,11 @@ metadata:
     app.kubernetes.io/created-by: gameserver-operator
   name: projectzomboid-sample
 spec:
-  storage: 10G
+  persistence:
+    storageConfig:
+      size: 10G
+    # storageClassName: standard # Optional: specify expandable storage class
+    preserveOnDelete: false # Optional: preserve PVC when CR is deleted
   resources:
     requests:
       memory: 8Gi
@@ -53,6 +57,9 @@ spec:
   #           operator: "In"
   #           values: ["amd64"]
 
+  # Annotations for GCP/GKE (e.g., for spot instances)
+  # annotations:
+  #   cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
   config:
     server: |
       ### custom project zomboid server config ###

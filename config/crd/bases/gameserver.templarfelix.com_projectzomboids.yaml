@@ -925,6 +925,11 @@ spec:
                         type: array
                     type: object
                 type: object
+              annotations:
+                additionalProperties:
+                  type: string
+                description: Annotations for the pod template
+                type: object
               config:
                 description: ProjectZomboidConfig defines configuration for Project
                   Zomboid & LinuxGSM
@@ -947,6 +952,29 @@ spec:
                   type: string
                 description: NodeSelector is a selector which must be true for the
                   pod to fit on a node
+                type: object
+              persistence:
+                description: Persistence configures the persistent volume for game
+                  data
+                properties:
+                  preserveOnDelete:
+                    default: false
+                    type: boolean
+                  storage:
+                    description: 'Storage size for the persistent volume (deprecated:
+                      use storageConfig.size)'
+                    type: string
+                  storageConfig:
+                    description: Storage configuration
+                    properties:
+                      size:
+                        default: 10G
+                        description: 'Size of the persistent volume (default: "10G")'
+                        type: string
+                      storageClassName:
+                        description: Storage class name for the volume
+                        type: string
+                    type: object
                 type: object
               ports:
                 items:
@@ -1072,9 +1100,6 @@ spec:
                       More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
                     type: object
                 type: object
-              storage:
-                default: 10G
-                type: string
               tolerations:
                 description: Tolerations are the tolerations for the pod
                 items:
