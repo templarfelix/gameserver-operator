@@ -4,20 +4,20 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.19.0
-  name: projectzomboids.gameserver.templarfelix.com
+  name: kf2s.gameserver.templarfelix.com
 spec:
   group: gameserver.templarfelix.com
   names:
-    kind: ProjectZomboid
-    listKind: ProjectZomboidList
-    plural: projectzomboids
-    singular: projectzomboid
+    kind: Kf2
+    listKind: Kf2List
+    plural: kf2s
+    singular: kf2
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ProjectZomboid is the Schema for the projectzomboids API
+        description: Kf2 is the Schema for the kf2s API
         properties:
           apiVersion:
             description: |-
@@ -37,7 +37,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: ProjectZomboidSpec defines the desired state of ProjectZomboid
+            description: Kf2Spec defines the desired state of Kf2
             properties:
               affinity:
                 description: Affinity is the affinity for the pod
@@ -931,238 +931,228 @@ spec:
                 description: Annotations for the pod template
                 type: object
               config:
-                description: ProjectZomboidConfig defines configuration for Project
-                  Zomboid & LinuxGSM
+                description: Kf2Config defines configuration for KF2 & LinuxGSM
                 properties:
                   game:
-                    description: Game server configuration (server.ini)
+                    description: Game server configuration (KFGame.ini)
                     properties:
                       adminPassword:
                         default: adminpassword
-                        description: Admin password
+                        description: Admin password for server administration
                         type: string
-                      adminSafehouseCooldown:
-                        default: "2"
-                        description: Admin safehouse cooldown
-                        type: string
-                      allowDestructionBySledgehammer:
-                        default: true
-                        description: Enable punching
-                        type: boolean
-                      bannedPlayerKickedTime:
-                        default: 1
-                        description: Ban kick time
-                        format: int32
-                        type: integer
-                      bleedingChance:
-                        default: "100"
-                        description: Bleeding chance (0-100)
-                        type: string
-                      chatStreams:
-                        default: 0
-                        description: Chat streams
-                        format: int32
-                        type: integer
-                      constructionPreRequisites:
-                        default: true
-                        description: Construction pre-requisites
-                        type: boolean
-                      damageMultiplier:
-                        default: "3"
-                        description: Damage multiplier
-                        type: string
-                      defaultPort:
-                        default: 16261
-                        description: Port for the server
-                        format: int32
-                        type: integer
-                      dropOffWhiteListedObjects:
-                        description: Drop off white-listed objects when player dies
-                        type: boolean
-                      fastForwardMultiplier:
-                        default: 1
-                        description: Fast forward multiplier (advanced)
-                        format: int32
-                        type: integer
-                      foodRotSpeed:
-                        default: "1.0"
-                        description: Food rot speed multiplier
-                        type: string
-                      globalChat:
+                      allowAdminPause:
                         default: false
-                        description: Enable global chat
+                        description: Allow admins to pause the game
                         type: boolean
-                      hoursForLootRespawn:
-                        default: "0.0"
-                        description: Hours for loot respawn
+                      clanMotto:
+                        default: KF2 Server
+                        description: Clan/Server name for display
                         type: string
-                      map:
-                        default: Muldraugh, KY
-                        description: Map (what world generator to use)
-                        enum:
-                        - Muldraugh, KY
-                        type: string
-                      maxAccountsPerUser:
-                        default: 0
-                        description: Maximum accounts per user
+                      difficulty:
+                        default: 1
+                        description: Server difficulty level (0=Normal, 1=Hard, 2=Suicidal,
+                          3=Hell on Earth)
                         format: int32
+                        maximum: 3
+                        minimum: 0
                         type: integer
-                      maxItemsForLootRespawn:
-                        default: "4"
-                        description: Max items for loot respawn
+                      disableKickVoting:
+                        default: true
+                        description: Enable kick voting
+                        type: boolean
+                      disablePickupsWhenFull:
+                        default: false
+                        description: Weapons can pick up while full
+                        type: boolean
+                      emptyServerDelay:
+                        default: 120
+                        description: Delay before game ends when empty (seconds)
+                        format: int32
+                        maximum: 600
+                        minimum: 60
+                        type: integer
+                      enableDeadToVOIP:
+                        default: true
+                        description: Enable death to VOIP (dead players can talk but
+                          not hear)
+                        type: boolean
+                      enableGameAnalytics:
+                        default: true
+                        description: Enable game analytics reporting
+                        type: boolean
+                      enableMapObjectives:
+                        default: true
+                        description: Enable map objectives
+                        type: boolean
+                      enableMapVoting:
+                        default: true
+                        description: Enable map voting
+                        type: boolean
+                      enablePublicVOIPChannel:
+                        default: true
+                        description: Enable Public VOIP channel
+                        type: boolean
+                      enableSpectatorVOIP:
+                        default: false
+                        description: Enable spectator VOIP
+                        type: boolean
+                      enableVOIP:
+                        default: true
+                        description: Enable VOIP in game
+                        type: boolean
+                      enableWelcomeMessage:
+                        default: true
+                        description: Enable server welcome message
+                        type: boolean
+                      friendlyFireScale:
+                        default: "0.0"
+                        description: Friendly Fire damage multiplier (0.0 = no friendly
+                          fire, 1.0 = full damage)
+                        type: string
+                      gameLength:
+                        default: 1
+                        description: Game length (0=Short, 1=Medium Normal, 2=Long)
+                        format: int32
+                        maximum: 2
+                        minimum: 0
+                        type: integer
+                      gameMode:
+                        default: Survival
+                        description: Game mode type
+                        enum:
+                        - Survival
+                        - WeeklySurvival
+                        - VersusSurvival
+                        type: string
+                      goreLevel:
+                        default: 2
+                        description: Gore level (0=None, 1=Reduced, 2=Full)
+                        format: int32
+                        maximum: 2
+                        minimum: 0
+                        type: integer
+                      initialSpawnRateModifier:
+                        default: "1.0"
+                        description: Initial spawn rate modifier (controls initial
+                          ZED spawn rate)
+                        type: string
+                      kickVotePercentage:
+                        default: "0.5"
+                        description: Minimum percentage required for successful kick
+                          vote (0.5 = 50%)
+                        type: string
+                      mapCycle:
+                        default:
+                        - KF-BurningParis
+                        - KF-BioticsLab
+                        - KF-Outpost
+                        - KF-VolterManor
+                        - KF-Catacombs
+                        description: Map cycle - array of map names
+                        items:
+                          type: string
+                        type: array
+                      mapVoteDuration:
+                        default: 60
+                        description: Map vote duration in seconds
+                        format: int32
+                        maximum: 120
+                        minimum: 30
+                        type: integer
+                      mapVotePercentage:
+                        default: "0.0"
+                        description: Percentage required for map vote (0.0 = disable,
+                          1.0 = 100% needed)
                         type: string
                       maxPlayers:
-                        default: 32
-                        description: Maximum players
+                        default: 6
+                        description: Maximum number of players
                         format: int32
+                        maximum: 12
+                        minimum: 1
                         type: integer
-                      minutesPerDay:
+                      maxSpawnRateModifier:
                         default: "1.0"
-                        description: Minutes surviving bonus multiplier
+                        description: Max spawn rate modifier (controls maximum ZED
+                          spawn rate)
                         type: string
-                      minutesPerPage:
-                        default: "1.0"
-                        description: Minutes per page (for reading books etc)
-                        type: string
-                      mods:
-                        description: Mods (comma-separated mod names)
-                        type: string
-                      nutrition:
-                        default: true
-                        description: Nutrition enabled
+                      maxSpectators:
+                        default: 2
+                        description: Maximum number of spectators
+                        format: int32
+                        maximum: 12
+                        minimum: 0
+                        type: integer
+                      partitionSpectators:
+                        default: false
+                        description: Partition spectators (spectators only talk to
+                          other spectators)
                         type: boolean
-                      openWhitelistMod:
-                        default: server
-                        description: Open whitelist mod
-                        type: string
                       password:
-                        description: Password for joining the server
+                        description: Server password (blank = no password)
                         type: string
-                      pauseOnEmptyServer:
+                      recordGameStats:
                         default: false
-                        description: Pause when no players online
+                        description: Enable recording game statistics
                         type: boolean
-                      pingLimit:
-                        default: 400
-                        description: Ping limit
-                        format: int32
-                        type: integer
-                      playerRespawnWithOther:
-                        default: 0
-                        description: Player respawn time in hours
-                        format: int32
-                        type: integer
-                      playerRespawnWithSelf:
-                        default: 0
-                        description: Player respawn time in days
-                        format: int32
-                        type: integer
-                      playerSafehouseCooldown:
-                        default: "2"
-                        description: Player safehouse cooldown
-                        type: string
-                      pvp:
-                        default: true
-                        description: Enable PVP
-                        type: boolean
-                      removeExpiredZombies:
-                        default: false
-                        description: Remove expire zombie
-                        type: boolean
-                      resetId:
-                        description: Reset ID - increments by 1 every time server
-                          configuration is reset
-                        format: int32
-                        type: integer
-                      safehouseAllowDestroy:
-                        default: false
-                        description: Allow non-members to destroy safehouses
-                        type: boolean
-                      safehouseAllowRespawn:
-                        default: true
-                        description: Safehouse allow respawn
-                        type: boolean
-                      safehouseAllowTrepass:
-                        default: false
-                        description: Safehouse allow non-members claim
-                        type: boolean
-                      safehouseDaySurvivor:
-                        default: "0"
-                        description: Safehouse day survived to claim
-                        type: string
-                      saveWorldEveryMinutes:
-                        default: 15
-                        description: Save interval (minutes)
-                        format: int32
-                        type: integer
-                      serverDescription:
-                        default: A Project Zomboid Server
-                        description: Server description
+                      serverMOTD:
+                        default: Good luck and have fun!
+                        description: Server MOTD
                         type: string
                       serverName:
-                        default: Project Zomboid Server
-                        description: Server name
+                        default: KF2 Server
+                        description: Server name displayed in server browser
                         type: string
-                      serverPlayerID:
-                        description: Server player ID
+                      timeBetweenFailedVotes:
+                        default: 10
+                        description: Time to wait for failed votes (seconds)
                         format: int32
+                        maximum: 60
+                        minimum: 5
                         type: integer
-                      serverWelcomeMessage:
+                      voteTime:
+                        default: 30
+                        description: Time to wait for vote result (seconds)
+                        format: int32
+                        maximum: 60
+                        minimum: 5
+                        type: integer
+                      weaponSpawnModifier:
+                        default: "1.0"
+                        description: Weapon spawn rate modifier (0.5 = half, 1.0 =
+                          normal, 2.0 = double)
+                        type: string
+                      welcomeMessage:
+                        default: Welcome to our Killing Floor 2 server!
                         description: Server welcome message
                         type: string
-                      sleepAllowed:
-                        default: true
-                        description: Sleep allowed
-                        type: boolean
-                      udpPort:
-                        default: 16262
-                        description: UDP port for the server
-                        format: int32
-                        type: integer
-                      workshopItems:
-                        description: Workshop items (comma-separated Steam workshop
-                          IDs)
+                      zedHeadHealthModifier:
+                        default: "1.0"
+                        description: ZED head health modifier (0.5 = half health,
+                          1.0 = normal, 2.0 = double health)
                         type: string
-                      worldEraseSpeed:
-                        default: 90
-                        description: World erase speed
-                        format: int32
-                        type: integer
-                      zombieLureDistance:
-                        default: "0.0"
-                        description: Zombie lure distance
+                      zedHealthModifier:
+                        default: "1.0"
+                        description: ZED health modifier (0.5 = half health, 1.0 =
+                          normal, 2.0 = double health)
                         type: string
-                      zombieLureInterval:
-                        default: 0
-                        description: Zombie lure interval
-                        format: int32
-                        type: integer
-                      zombieMigrateDistance:
-                        default: 1000
-                        description: Zombie migrate distance
-                        format: int32
-                        type: integer
-                      zombiePopulation:
-                        default: 3
-                        description: Zombie population
-                        format: int32
-                        type: integer
-                      zombieRespawnPeriod:
-                        default: 1000
-                        description: Zombies respawn period
-                        format: int32
-                        type: integer
-                      zombieRespawnRate:
-                        default: -1
-                        description: Zombies respawn rate
-                        format: int32
-                        type: integer
+                      zedMovementSpeedModifier:
+                        default: "1.0"
+                        description: ZED movement speed modifier (0.5 = half speed,
+                          1.0 = normal, 2.0 = double speed)
+                        type: string
                     type: object
                   gsm:
                     description: LinuxGSM specific configuration
                     properties:
                       configFile:
-                        description: Custom LinuxGSM configuration file content
+                        description: Custom LinuxGSM config file content
+                        type: string
+                      steamPass:
+                        description: Steam password for server authentication (optional)
+                        type: string
+                      steamUser:
+                        description: Steam username for server authentication (optional)
                         type: string
                     type: object
                 type: object
@@ -1170,7 +1160,7 @@ spec:
                 description: EditorPassword is the password for the code-server editor
                 type: string
               image:
-                default: gameservermanagers/gameserver:project-zomboid
+                default: gameservermanagers/gameserver:kf2
                 type: string
               loadBalancerIP:
                 type: string
@@ -1367,7 +1357,7 @@ spec:
             - resources
             type: object
           status:
-            description: ProjectZomboidStatus defines the observed state of ProjectZomboid
+            description: Kf2Status defines the observed state of Kf2
             properties:
               conditions:
                 description: Conditions represent the latest available observations

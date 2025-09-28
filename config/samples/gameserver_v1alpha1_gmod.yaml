@@ -1,0 +1,118 @@
+apiVersion: gameserver.templarfelix.com/v1alpha1
+kind: Gmod
+metadata:
+  labels:
+    app.kubernetes.io/name: gmod
+    app.kubernetes.io/instance: gmod-sample
+    app.kubernetes.io/part-of: gameserver-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: gameserver-operator
+  name: gmod-sample
+spec:
+  persistence:
+    storageConfig:
+      size: 10G
+    # storageClassName: standard # Optional: specify expandable storage class
+    preserveOnDelete: false # Optional: preserve PVC when CR is deleted
+  resources:
+    requests:
+      memory: 4Gi
+      cpu: 2
+    limits:
+      memory: 8Gi
+      cpu: 4
+  ports:
+    - name: game-tcp
+      port: 27015
+      targetPort: 27015
+      protocol: TCP
+    - name: client-connection
+      port: 27005
+      targetPort: 27005
+      protocol: TCP
+    - name: sourcetv
+      port: 27020
+      targetPort: 27020
+      protocol: TCP
+
+  # Load balancer IP configuration
+  # loadBalancerIP: your-public-ip-address
+
+  # Code server editor password
+  # editorPassword: your-editor-password
+
+  # Node selection configuration
+  # nodeSelector:
+  #   disktype: ssd
+  #   gpu: "true"
+  #
+  # tolerations:
+  # - key: "dedicated"
+  #   operator: "Equal"
+  #   value: "gameserver"
+  #   effect: "NoSchedule"
+  #
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #       - matchExpressions:
+  #         - key: "kubernetes.io/arch"
+  #           operator: "In"
+  #           values: ["amd64"]
+
+  # Annotations for GCP/GKE (e.g., for spot instances)
+  # annotations:
+  #   cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+  config:
+    game:
+      # Server hostname
+      hostname: "My GMod Server"
+      # Server password (empty means no password)
+      password: ""
+      # Max players
+      maxPlayers: 16
+      # Game mode (sandbox, darkrp, terrortown, etc.)
+      gameMode: "sandbox"
+      # Default map
+      defaultMap: "gm_construct"
+      # Enable CS:GO Lua (usually true for custom content)
+      allowCSLua: true
+      # Workshop collection ID for addons
+      workshopCollectionId: "123456789"
+      # Enable/disable PvP
+      pvp: true
+      # Enable/disable M9K weapons pack
+      m9kWeapons: false
+      # Enable/disable DarkRP economy (when using DarkRP gamemode)
+      darkRpEconomy: false
+      # Enable/disable fall damage
+      fallDamage: true
+      # Enable/disable vehicle spawning
+      allowVehicles: true
+      # Enable/disable NPC spawning
+      allowNPCs: true
+      # Enable/disable weapon spawning
+      allowWeapons: true
+      # Enable/disable prop spawning
+      allowProps: true
+      # Enable/disable effect spawning
+      allowEffects: true
+      # Enable/disable ragdoll spawning
+      allowRagdolls: true
+    # LinuxGSM specific configuration
+    gsm:
+      # Server port (default: 27015)
+      port: 27015
+      # Client connection port (default: 27005)
+      clientPort: 27005
+      # SourceTV port (default: 27020)
+      sourceTVPort: 27020
+      # Server tickrate (higher = smoother gameplay)
+      tickRate: 66
+      # Workshop collection ID (alternative location)
+      # workshopCollectionId: "123456789"
+      # Game Server Login Token (optional - required for public servers)
+      # gslt: "your-gslt-here"
+      # Enable LinuxGSM stats reporting
+      stats: false

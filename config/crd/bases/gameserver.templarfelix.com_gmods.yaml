@@ -4,20 +4,20 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.19.0
-  name: projectzomboids.gameserver.templarfelix.com
+  name: gmods.gameserver.templarfelix.com
 spec:
   group: gameserver.templarfelix.com
   names:
-    kind: ProjectZomboid
-    listKind: ProjectZomboidList
-    plural: projectzomboids
-    singular: projectzomboid
+    kind: Gmod
+    listKind: GmodList
+    plural: gmods
+    singular: gmod
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ProjectZomboid is the Schema for the projectzomboids API
+        description: Gmod is the Schema for the gmods API
         properties:
           apiVersion:
             description: |-
@@ -37,7 +37,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: ProjectZomboidSpec defines the desired state of ProjectZomboid
+            description: GmodSpec defines the desired state of Gmod
             properties:
               affinity:
                 description: Affinity is the affinity for the pod
@@ -931,238 +931,185 @@ spec:
                 description: Annotations for the pod template
                 type: object
               config:
-                description: ProjectZomboidConfig defines configuration for Project
-                  Zomboid & LinuxGSM
+                description: GmodConfig defines configuration for Garry's Mod & LinuxGSM
                 properties:
                   game:
-                    description: Game server configuration (server.ini)
+                    description: Game server configuration (server.cfg)
                     properties:
-                      adminPassword:
-                        default: adminpassword
-                        description: Admin password
+                      adminSteamIds:
+                        description: Admin SteamID64 (comma-separated for multiple
+                          admins)
                         type: string
-                      adminSafehouseCooldown:
-                        default: "2"
-                        description: Admin safehouse cooldown
-                        type: string
-                      allowDestructionBySledgehammer:
-                        default: true
-                        description: Enable punching
-                        type: boolean
-                      bannedPlayerKickedTime:
-                        default: 1
-                        description: Ban kick time
-                        format: int32
-                        type: integer
-                      bleedingChance:
-                        default: "100"
-                        description: Bleeding chance (0-100)
-                        type: string
-                      chatStreams:
-                        default: 0
-                        description: Chat streams
-                        format: int32
-                        type: integer
-                      constructionPreRequisites:
-                        default: true
-                        description: Construction pre-requisites
-                        type: boolean
-                      damageMultiplier:
-                        default: "3"
-                        description: Damage multiplier
-                        type: string
-                      defaultPort:
-                        default: 16261
-                        description: Port for the server
-                        format: int32
-                        type: integer
-                      dropOffWhiteListedObjects:
-                        description: Drop off white-listed objects when player dies
-                        type: boolean
-                      fastForwardMultiplier:
-                        default: 1
-                        description: Fast forward multiplier (advanced)
-                        format: int32
-                        type: integer
-                      foodRotSpeed:
-                        default: "1.0"
-                        description: Food rot speed multiplier
-                        type: string
-                      globalChat:
+                      ads:
                         default: false
-                        description: Enable global chat
+                        description: Enable/disable custom admin messages
                         type: boolean
-                      hoursForLootRespawn:
-                        default: "0.0"
-                        description: Hours for loot respawn
+                      allowCSLua:
+                        default: true
+                        description: Allow custom CSS file loading
+                        type: boolean
+                      allowEffects:
+                        default: true
+                        description: Enable/disable effects spawning
+                        type: boolean
+                      allowNPCs:
+                        default: true
+                        description: Enable/disable NPC spawning
+                        type: boolean
+                      allowProps:
+                        default: true
+                        description: Enable/disable props spawning
+                        type: boolean
+                      allowRagdolls:
+                        default: true
+                        description: Enable/disable ragdolls spawning
+                        type: boolean
+                      allowVehicles:
+                        default: true
+                        description: Enable/disable vehicle spawning
+                        type: boolean
+                      allowWeapons:
+                        default: true
+                        description: Enable/disable weapons spawning
+                        type: boolean
+                      alltalk:
+                        default: true
+                        description: Dead players can hear live players
+                        type: boolean
+                      darkRpEconomy:
+                        default: false
+                        description: Enable/disable darkRP economy system
+                        type: boolean
+                      defaultMap:
+                        default: gm_construct
+                        description: Default map
                         type: string
-                      map:
-                        default: Muldraugh, KY
-                        description: Map (what world generator to use)
-                        enum:
-                        - Muldraugh, KY
+                      fallDamage:
+                        default: true
+                        description: Enable/disable fall damage
+                        type: boolean
+                      fastDlUrl:
+                        description: Fast download URL for workshop items
                         type: string
-                      maxAccountsPerUser:
+                      gameMode:
+                        default: sandbox
+                        description: Game mode
+                        type: string
+                      hostname:
+                        default: Garry's Mod Server
+                        description: Server hostname
+                        type: string
+                      lanOnly:
                         default: 0
-                        description: Maximum accounts per user
+                        description: Enable LAN only (0=Internet, 1=LAN only)
                         format: int32
                         type: integer
-                      maxItemsForLootRespawn:
-                        default: "4"
-                        description: Max items for loot respawn
+                      logFile:
+                        default: false
+                        description: Enable/disable prop deletion logging
+                        type: boolean
+                      loggingLevel:
+                        default: 1
+                        description: Logging level (1=minimal, 2=normal, 3=verbose)
+                        format: int32
+                        type: integer
+                      m9kWeapons:
+                        default: false
+                        description: Enable/disable M9K weapons
+                        type: boolean
+                      mapCycle:
+                        default: true
+                        description: Enable/disable map cycling
+                        type: boolean
+                      mapCycleFile:
+                        default: mapcycle.txt
+                        description: Map cycle file (relative path)
                         type: string
                       maxPlayers:
-                        default: 32
-                        description: Maximum players
+                        default: 16
+                        description: Maximum number of players
                         format: int32
                         type: integer
-                      minutesPerDay:
-                        default: "1.0"
-                        description: Minutes surviving bonus multiplier
-                        type: string
-                      minutesPerPage:
-                        default: "1.0"
-                        description: Minutes per page (for reading books etc)
-                        type: string
-                      mods:
-                        description: Mods (comma-separated mod names)
-                        type: string
-                      nutrition:
-                        default: true
-                        description: Nutrition enabled
-                        type: boolean
-                      openWhitelistMod:
-                        default: server
-                        description: Open whitelist mod
+                      maxPropsPerPlayer:
+                        default: 200
+                        description: Maximum number of props per player
+                        format: int32
+                        type: integer
+                      motd:
+                        description: MOTD file URL or text
                         type: string
                       password:
-                        description: Password for joining the server
-                        type: string
-                      pauseOnEmptyServer:
-                        default: false
-                        description: Pause when no players online
-                        type: boolean
-                      pingLimit:
-                        default: 400
-                        description: Ping limit
-                        format: int32
-                        type: integer
-                      playerRespawnWithOther:
-                        default: 0
-                        description: Player respawn time in hours
-                        format: int32
-                        type: integer
-                      playerRespawnWithSelf:
-                        default: 0
-                        description: Player respawn time in days
-                        format: int32
-                        type: integer
-                      playerSafehouseCooldown:
-                        default: "2"
-                        description: Player safehouse cooldown
+                        description: Server password (blank = no password)
                         type: string
                       pvp:
                         default: true
-                        description: Enable PVP
+                        description: Enable/disable PvP
                         type: boolean
-                      removeExpiredZombies:
-                        default: false
-                        description: Remove expire zombie
-                        type: boolean
-                      resetId:
-                        description: Reset ID - increments by 1 every time server
-                          configuration is reset
-                        format: int32
-                        type: integer
-                      safehouseAllowDestroy:
-                        default: false
-                        description: Allow non-members to destroy safehouses
-                        type: boolean
-                      safehouseAllowRespawn:
-                        default: true
-                        description: Safehouse allow respawn
-                        type: boolean
-                      safehouseAllowTrepass:
-                        default: false
-                        description: Safehouse allow non-members claim
-                        type: boolean
-                      safehouseDaySurvivor:
-                        default: "0"
-                        description: Safehouse day survived to claim
-                        type: string
-                      saveWorldEveryMinutes:
-                        default: 15
-                        description: Save interval (minutes)
+                      region:
+                        default: 255
+                        description: Server region (0=US East, 1=US West, 2=South
+                          America, 3=Europe, 4=Asia, 5=Australia, 6=Middle East, 7=Africa,
+                          255=World)
                         format: int32
                         type: integer
                       serverDescription:
-                        default: A Project Zomboid Server
+                        default: A Garry's Mod Server
                         description: Server description
                         type: string
-                      serverName:
-                        default: Project Zomboid Server
-                        description: Server name
+                      serverOwnerSteamId:
+                        description: Server owner SteamID64
                         type: string
-                      serverPlayerID:
-                        description: Server player ID
-                        format: int32
-                        type: integer
-                      serverWelcomeMessage:
-                        description: Server welcome message
+                      serverTags:
+                        description: Server tags (comma-separated)
                         type: string
-                      sleepAllowed:
-                        default: true
-                        description: Sleep allowed
-                        type: boolean
-                      udpPort:
-                        default: 16262
-                        description: UDP port for the server
-                        format: int32
-                        type: integer
-                      workshopItems:
-                        description: Workshop items (comma-separated Steam workshop
-                          IDs)
-                        type: string
-                      worldEraseSpeed:
-                        default: 90
-                        description: World erase speed
-                        format: int32
-                        type: integer
-                      zombieLureDistance:
-                        default: "0.0"
-                        description: Zombie lure distance
-                        type: string
-                      zombieLureInterval:
+                      voiceDistance:
                         default: 0
-                        description: Zombie lure interval
+                        description: Voice distance in units
                         format: int32
                         type: integer
-                      zombieMigrateDistance:
-                        default: 1000
-                        description: Zombie migrate distance
-                        format: int32
-                        type: integer
-                      zombiePopulation:
-                        default: 3
-                        description: Zombie population
-                        format: int32
-                        type: integer
-                      zombieRespawnPeriod:
-                        default: 1000
-                        description: Zombies respawn period
-                        format: int32
-                        type: integer
-                      zombieRespawnRate:
-                        default: -1
-                        description: Zombies respawn rate
-                        format: int32
-                        type: integer
+                      voiceIcon:
+                        default: true
+                        description: Voice icon display
+                        type: boolean
+                      workshopCollectionId:
+                        description: Workshop collection ID for addons
+                        type: string
                     type: object
                   gsm:
                     description: LinuxGSM specific configuration
                     properties:
+                      clientPort:
+                        default: 27005
+                        description: Client port (used for connection)
+                        format: int32
+                        type: integer
                       configFile:
                         description: Custom LinuxGSM configuration file content
+                        type: string
+                      gslt:
+                        description: Game Login Token (GSLT) for public servers
+                        type: string
+                      port:
+                        default: 27015
+                        description: Server port
+                        format: int32
+                        type: integer
+                      sourceTvPort:
+                        default: 27020
+                        description: SourceTV port
+                        format: int32
+                        type: integer
+                      stats:
+                        default: false
+                        description: Enable/disable LinuxGSM stats reporting
+                        type: boolean
+                      tickRate:
+                        default: 66
+                        description: Server tickrate
+                        format: int32
+                        type: integer
+                      workshopCollectionId:
+                        description: Workshop collection ID (alternative to server.cfg)
                         type: string
                     type: object
                 type: object
@@ -1170,7 +1117,7 @@ spec:
                 description: EditorPassword is the password for the code-server editor
                 type: string
               image:
-                default: gameservermanagers/gameserver:project-zomboid
+                default: gameservermanagers/gameserver:gmod
                 type: string
               loadBalancerIP:
                 type: string
@@ -1367,7 +1314,7 @@ spec:
             - resources
             type: object
           status:
-            description: ProjectZomboidStatus defines the observed state of ProjectZomboid
+            description: GmodStatus defines the observed state of Gmod
             properties:
               conditions:
                 description: Conditions represent the latest available observations

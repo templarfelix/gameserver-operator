@@ -41,14 +41,17 @@ metadata:
     app.kubernetes.io/created-by: gameserver-operator
   name: dayz-sample
 spec:
-  storage: 10G
+  persistence:
+    storageConfig:
+      size: 10G
+    preserveOnDelete: false
   resources:
-    requests:
-      memory: 8Gi
-      cpu: 4
     limits:
-      memory: 16Gi
-      cpu: 8
+      cpu: 2
+      memory: 4Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
   ports:
     - name: port-27015-tcp
       port: 27015
@@ -79,13 +82,13 @@ spec:
       targetPort: 27016
       protocol: UDP
 
-  # Load balancer IP configuration
+  # Load balancer IP configuration (optional: leave commented for localhost)
   # loadBalancerIP: your-public-ip-address
 
-  # Code server editor password
-  # editorPassword: your-editor-password
+  # Code server editor password (required for VS Code editor access)
+  editorPassword: your-editor-password
 
-  # Node selection configuration
+  # Node selection configuration (optional)
   # nodeSelector:
   #   disktype: ssd
   #   gpu: "true"

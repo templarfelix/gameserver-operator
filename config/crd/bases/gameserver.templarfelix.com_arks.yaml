@@ -4,20 +4,20 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.19.0
-  name: projectzomboids.gameserver.templarfelix.com
+  name: arks.gameserver.templarfelix.com
 spec:
   group: gameserver.templarfelix.com
   names:
-    kind: ProjectZomboid
-    listKind: ProjectZomboidList
-    plural: projectzomboids
-    singular: projectzomboid
+    kind: Ark
+    listKind: ArkList
+    plural: arks
+    singular: ark
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ProjectZomboid is the Schema for the projectzomboids API
+        description: Ark is the Schema for the arks API
         properties:
           apiVersion:
             description: |-
@@ -37,7 +37,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: ProjectZomboidSpec defines the desired state of ProjectZomboid
+            description: ArkSpec defines the desired state of Ark
             properties:
               affinity:
                 description: Affinity is the affinity for the pod
@@ -931,232 +931,287 @@ spec:
                 description: Annotations for the pod template
                 type: object
               config:
-                description: ProjectZomboidConfig defines configuration for Project
-                  Zomboid & LinuxGSM
+                description: ArkConfig defines configuration for Ark & LinuxGSM
                 properties:
                   game:
-                    description: Game server configuration (server.ini)
+                    description: Advanced game configuration (Game.ini)
+                    properties:
+                      breeding:
+                        description: Breeding rates
+                        properties:
+                          babyMaturationSpeedScale:
+                            description: Baby maturation speed scale
+                            type: string
+                          eggHatchSpeedScale:
+                            description: Egg hatch speed scale
+                            type: string
+                          imprintPeriodMultiplier:
+                            description: Imprint period multiplier
+                            type: string
+                          matingIntervalMultiplier:
+                            description: Mating interval multiplier
+                            type: string
+                          singleBabyGestation:
+                            description: Enable/disable single baby gestation
+                            type: boolean
+                        type: object
+                      customRates:
+                        description: Custom rate settings
+                        properties:
+                          dayCycleSpeedScale:
+                            description: Day cycle speed scale
+                            type: string
+                          disablePvPAutoBalance:
+                            description: Disable PVP balance
+                            type: boolean
+                          disableStructurePlacementCollision:
+                            description: Disable structure placement collision
+                            type: boolean
+                          randomSupplyCratePoints:
+                            description: Random supply crate points
+                            type: boolean
+                          tamedDinoLevelMultiplier:
+                            description: Tamed dino level multiplier
+                            type: string
+                          wildDinoLevelMultiplier:
+                            description: Wild dino level multiplier
+                            type: string
+                          xpMultiplier:
+                            description: XP multiplier
+                            type: string
+                        type: object
+                      difficulty:
+                        description: Difficulty settings
+                        properties:
+                          difficultyLevel:
+                            description: Difficulty level
+                            type: string
+                          dontUseDifficulty:
+                            description: Prevent level progression beyond max difficulty
+                            type: boolean
+                          maxDifficulty:
+                            description: Max difficulty
+                            type: boolean
+                          overrideOfficialDifficulty:
+                            description: Override official difficulty
+                            type: string
+                          preventSpawningDinosWithoutSaddle:
+                            description: Prevent spawning dinos without saddle
+                            type: boolean
+                          useSinglePlayerSettings:
+                            description: Use single player settings
+                            type: boolean
+                        type: object
+                      harvesting:
+                        description: Resource harvesting rates
+                        properties:
+                          crystalHarvestQuantity:
+                            description: Crystal harvesting quantity
+                            type: string
+                          damageMultiplier:
+                            description: Harvesting damage multiplier
+                            type: string
+                          dayCycleSpeedScale:
+                            description: Day cycle speed scale
+                            type: string
+                          dayTimeSpeedScale:
+                            description: Day time speed scale
+                            type: string
+                          flintHarvestQuantity:
+                            description: Flint harvesting quantity
+                            type: string
+                          metalHarvestQuantity:
+                            description: Metal harvesting quantity
+                            type: string
+                          obsidianHarvestQuantity:
+                            description: Obsidian harvesting quantity
+                            type: string
+                          oilHarvestQuantity:
+                            description: Oil harvesting quantity
+                            type: string
+                          stoneHarvestQuantity:
+                            description: Stone harvesting quantity
+                            type: string
+                          thatchHarvestQuantity:
+                            description: Fiber harvesting quantity
+                            type: string
+                          useSinglePlayerDamage:
+                            description: Use single player harvesting damage
+                            type: boolean
+                          woodHarvestQuantity:
+                            description: Wood harvesting quantity
+                            type: string
+                        type: object
+                    type: object
+                  gameUserSettings:
+                    description: Game configuration settings (GameUserSettings.ini)
                     properties:
                       adminPassword:
                         default: adminpassword
                         description: Admin password
                         type: string
-                      adminSafehouseCooldown:
-                        default: "2"
-                        description: Admin safehouse cooldown
-                        type: string
-                      allowDestructionBySledgehammer:
+                      crossplay:
                         default: true
-                        description: Enable punching
+                        description: Enable/disable Crossplay
                         type: boolean
-                      bannedPlayerKickedTime:
-                        default: 1
-                        description: Ban kick time
-                        format: int32
-                        type: integer
-                      bleedingChance:
-                        default: "100"
-                        description: Bleeding chance (0-100)
-                        type: string
-                      chatStreams:
-                        default: 0
-                        description: Chat streams
-                        format: int32
-                        type: integer
-                      constructionPreRequisites:
-                        default: true
-                        description: Construction pre-requisites
-                        type: boolean
-                      damageMultiplier:
-                        default: "3"
-                        description: Damage multiplier
-                        type: string
-                      defaultPort:
-                        default: 16261
-                        description: Port for the server
-                        format: int32
-                        type: integer
-                      dropOffWhiteListedObjects:
-                        description: Drop off white-listed objects when player dies
-                        type: boolean
-                      fastForwardMultiplier:
-                        default: 1
-                        description: Fast forward multiplier (advanced)
-                        format: int32
-                        type: integer
-                      foodRotSpeed:
+                      difficulty:
                         default: "1.0"
-                        description: Food rot speed multiplier
+                        description: Difficulty level (0.2 - 1.0)
                         type: string
-                      globalChat:
-                        default: false
-                        description: Enable global chat
+                      enableRcon:
+                        default: true
+                        description: Enable/disable RCON
                         type: boolean
-                      hoursForLootRespawn:
-                        default: "0.0"
-                        description: Hours for loot respawn
-                        type: string
-                      map:
-                        default: Muldraugh, KY
-                        description: Map (what world generator to use)
-                        enum:
-                        - Muldraugh, KY
-                        type: string
-                      maxAccountsPerUser:
-                        default: 0
-                        description: Maximum accounts per user
-                        format: int32
-                        type: integer
-                      maxItemsForLootRespawn:
-                        default: "4"
-                        description: Max items for loot respawn
-                        type: string
                       maxPlayers:
-                        default: 32
-                        description: Maximum players
+                        default: 20
+                        description: Max number of players
                         format: int32
                         type: integer
-                      minutesPerDay:
-                        default: "1.0"
-                        description: Minutes surviving bonus multiplier
-                        type: string
-                      minutesPerPage:
-                        default: "1.0"
-                        description: Minutes per page (for reading books etc)
-                        type: string
+                      modInstaller:
+                        default: true
+                        description: Enable/disable mods
+                        type: boolean
                       mods:
-                        description: Mods (comma-separated mod names)
+                        description: Mod IDs to install (comma-separated)
                         type: string
-                      nutrition:
-                        default: true
-                        description: Nutrition enabled
-                        type: boolean
-                      openWhitelistMod:
-                        default: server
-                        description: Open whitelist mod
+                      rconPort:
+                        default: 27020
+                        description: 'RCON port (default: 27020)'
+                        format: int32
+                        type: integer
+                      serverMap:
+                        default: TheIsland
+                        description: Server Map
+                        enum:
+                        - TheIsland
+                        - TheCenter
+                        - ScorchedEarth
+                        - Aberration
+                        - Extinction
+                        - Genesis
+                        - TheIslandII
+                        - Fjordur
+                        - LostIsland
+                        - Valguero
+                        - CrystalIsles
+                        - Genesis2
+                        - Ragnarok
+                        - Newtastic
                         type: string
-                      password:
-                        description: Password for joining the server
-                        type: string
-                      pauseOnEmptyServer:
-                        default: false
-                        description: Pause when no players online
-                        type: boolean
-                      pingLimit:
-                        default: 400
-                        description: Ping limit
+                      serverPort:
+                        default: 7777
+                        description: 'Server port (default: 7777)'
                         format: int32
                         type: integer
-                      playerRespawnWithOther:
-                        default: 0
-                        description: Player respawn time in hours
-                        format: int32
-                        type: integer
-                      playerRespawnWithSelf:
-                        default: 0
-                        description: Player respawn time in days
-                        format: int32
-                        type: integer
-                      playerSafehouseCooldown:
-                        default: "2"
-                        description: Player safehouse cooldown
-                        type: string
-                      pvp:
-                        default: true
-                        description: Enable PVP
-                        type: boolean
-                      removeExpiredZombies:
-                        default: false
-                        description: Remove expire zombie
-                        type: boolean
-                      resetId:
-                        description: Reset ID - increments by 1 every time server
-                          configuration is reset
-                        format: int32
-                        type: integer
-                      safehouseAllowDestroy:
-                        default: false
-                        description: Allow non-members to destroy safehouses
-                        type: boolean
-                      safehouseAllowRespawn:
-                        default: true
-                        description: Safehouse allow respawn
-                        type: boolean
-                      safehouseAllowTrepass:
-                        default: false
-                        description: Safehouse allow non-members claim
-                        type: boolean
-                      safehouseDaySurvivor:
-                        default: "0"
-                        description: Safehouse day survived to claim
-                        type: string
-                      saveWorldEveryMinutes:
-                        default: 15
-                        description: Save interval (minutes)
-                        format: int32
-                        type: integer
-                      serverDescription:
-                        default: A Project Zomboid Server
-                        description: Server description
-                        type: string
-                      serverName:
-                        default: Project Zomboid Server
-                        description: Server name
-                        type: string
-                      serverPlayerID:
-                        description: Server player ID
-                        format: int32
-                        type: integer
-                      serverWelcomeMessage:
-                        description: Server welcome message
-                        type: string
-                      sleepAllowed:
-                        default: true
-                        description: Sleep allowed
-                        type: boolean
-                      udpPort:
-                        default: 16262
-                        description: UDP port for the server
-                        format: int32
-                        type: integer
-                      workshopItems:
-                        description: Workshop items (comma-separated Steam workshop
-                          IDs)
-                        type: string
-                      worldEraseSpeed:
-                        default: 90
-                        description: World erase speed
-                        format: int32
-                        type: integer
-                      zombieLureDistance:
-                        default: "0.0"
-                        description: Zombie lure distance
-                        type: string
-                      zombieLureInterval:
-                        default: 0
-                        description: Zombie lure interval
-                        format: int32
-                        type: integer
-                      zombieMigrateDistance:
-                        default: 1000
-                        description: Zombie migrate distance
-                        format: int32
-                        type: integer
-                      zombiePopulation:
-                        default: 3
-                        description: Zombie population
-                        format: int32
-                        type: integer
-                      zombieRespawnPeriod:
-                        default: 1000
-                        description: Zombies respawn period
-                        format: int32
-                        type: integer
-                      zombieRespawnRate:
-                        default: -1
-                        description: Zombies respawn rate
-                        format: int32
-                        type: integer
+                      serverSettings:
+                        description: Server settings
+                        properties:
+                          allowFriendlyFire:
+                            default: true
+                            description: Allow friendly fire
+                            type: boolean
+                          autoSavePeriodMinutes:
+                            default: 15
+                            description: Auto save period minutes
+                            format: int32
+                            type: integer
+                          dayCycleSpeedScale:
+                            default: "1.0"
+                            description: Day cycle speed scale
+                            type: string
+                          dinoCountMultiplier:
+                            default: "1.0"
+                            description: Dino count multiplier
+                            type: string
+                          dinoFoodDrainMultiplier:
+                            default: "1.0"
+                            description: Dino food drain multiplier
+                            type: string
+                          disableLootCrates:
+                            default: true
+                            description: Enable/disable loot crates
+                            type: boolean
+                          disablePvPAutoBalance:
+                            default: false
+                            description: Disable PVP balance
+                            type: boolean
+                          disablePvPOption:
+                            default: false
+                            description: Disable PVP option
+                            type: boolean
+                          disableStructurePlacementCollision:
+                            default: false
+                            description: Disable structure placement collision
+                            type: boolean
+                          maxNumberOfPlayers:
+                            default: 4000
+                            description: Max number of tamed dinos
+                            format: int32
+                            type: integer
+                          maximumNumberOfPlayers:
+                            default: 4000
+                            description: Change max dinos
+                            format: int32
+                            type: integer
+                          nightTimeSpeed:
+                            default: "1.0"
+                            description: Night time speed scale
+                            type: string
+                          playerDamageMultiplier:
+                            default: "1.0"
+                            description: Player damage multiplier
+                            type: string
+                          playerResistance:
+                            default: "1.0"
+                            description: Player resistance
+                            type: string
+                          preventTribeAlliances:
+                            default: false
+                            description: Prevent tribe alliances
+                            type: boolean
+                          pvp:
+                            default: true
+                            description: Enable PVP
+                            type: boolean
+                          serverDescription:
+                            description: Server description
+                            type: string
+                          serverName:
+                            description: Server name
+                            type: string
+                          serverPVE:
+                            default: false
+                            description: Server PVE (overrides PVP setting)
+                            type: boolean
+                          showMapLocation:
+                            default: true
+                            description: Show map location
+                            type: boolean
+                          showPlayerMapLocation:
+                            default: true
+                            description: Show player map location
+                            type: boolean
+                          singleplayer:
+                            default: false
+                            description: Single player settings
+                            type: boolean
+                          structureDamageMultiplier:
+                            default: "1.0"
+                            description: Structure damage multiplier
+                            type: string
+                          tamedDinoDamageMultiplier:
+                            default: "1.0"
+                            description: Tamed dino damage multiplier
+                            type: string
+                          useSinglePlayerSettings:
+                            default: false
+                            description: Increase harvesting damage
+                            type: boolean
+                          wildDinoDamageMultiplier:
+                            default: "1.0"
+                            description: Wild dino damage multiplier
+                            type: string
+                        type: object
                     type: object
                   gsm:
                     description: LinuxGSM specific configuration
@@ -1170,7 +1225,7 @@ spec:
                 description: EditorPassword is the password for the code-server editor
                 type: string
               image:
-                default: gameservermanagers/gameserver:project-zomboid
+                default: gameservermanagers/gameserver:ark
                 type: string
               loadBalancerIP:
                 type: string
@@ -1367,7 +1422,7 @@ spec:
             - resources
             type: object
           status:
-            description: ProjectZomboidStatus defines the observed state of ProjectZomboid
+            description: ArkStatus defines the observed state of Ark
             properties:
               conditions:
                 description: Conditions represent the latest available observations

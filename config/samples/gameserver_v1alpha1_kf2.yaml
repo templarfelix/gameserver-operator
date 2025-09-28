@@ -1,0 +1,149 @@
+apiVersion: gameserver.templarfelix.com/v1alpha1
+kind: Kf2
+metadata:
+  labels:
+    app.kubernetes.io/name: kf2
+    app.kubernetes.io/instance: kf2-sample
+    app.kubernetes.io/part-of: gameserver-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: gameserver-operator
+  name: kf2-sample
+spec:
+  persistence:
+    storageConfig:
+      size: 15G
+    # storageClassName: standard # Optional: specify expandable storage class
+    preserveOnDelete: false # Optional: preserve PVC when CR is deleted
+  resources:
+    requests:
+      memory: 4Gi
+      cpu: 2
+    limits:
+      memory: 8Gi
+      cpu: 4
+  ports:
+    - name: port-7777-udp
+      port: 7777
+      targetPort: 7777
+      protocol: UDP
+    - name: port-27015-udp
+      port: 27015
+      targetPort: 27015
+      protocol: UDP
+    - name: port-8080-tcp
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+    # Web admin port (optional)
+    - name: port-8081-tcp
+      port: 8081
+      targetPort: 8081
+      protocol: TCP
+
+  # Load balancer IP configuration
+  # loadBalancerIP: your-public-ip-address
+
+  # Code server editor password
+  # editorPassword: your-editor-password
+
+  # Node selection configuration
+  # nodeSelector:
+  #   disktype: ssd
+  #   gpu: "true"
+  #
+  # tolerations:
+  # - key: "dedicated"
+  #   operator: "Equal"
+  #   value: "gameserver"
+  #   effect: "NoSchedule"
+  #
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #       - matchExpressions:
+  #         - key: "kubernetes.io/arch"
+  #           operator: "In"
+  #           values: ["amd64"]
+
+  # Annotations for GCP/GKE (e.g., for spot instances)
+  # annotations:
+  #   cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+
+  config:
+    game:
+      # Server Configuration
+      serverName: "KF2 Server"
+      password: ""
+      adminPassword: "adminpassword"
+      maxPlayers: 6
+      difficulty: 1
+      gameMode: "Survival"
+      gameLength: 1
+      allowAdminPause: false
+      maxSpectators: 2
+      disableKickVoting: false
+      kickVotePercentage: "0.5"
+      timeBetweenFailedVotes: 10
+      voteTime: 30
+
+      # Map Cycle Configuration
+      mapCycle:
+        - "KF-BurningParis"
+        - "KF-BioticsLab"
+        - "KF-Outpost"
+        - "KF-VolterManor"
+        - "KF-Catacombs"
+        - "KF-EvacuationPoint"
+        - "KF-BlackForest"
+        - "KF-Farmhouse"
+        - "KF-Prison"
+        - "KF-ContainmentStation"
+        - "KF-HostileGrounds"
+        - "KF-InfernalRealm"
+        - "KF-ZedLanding"
+        - "KF-TheDescent"
+        - "KF-Nuked"
+        - "KF-TragicKingdom"
+        - "KF-Nightmare"
+        - "KF-KrampusLair"
+
+      # VOIP Settings
+      enableVOIP: true
+      enablePublicVOIPChannel: true
+      enableSpectatorVOIP: false
+      enableDeadToVOIP: true
+      partitionSpectators: false
+
+      # Game Balance Settings
+      friendlyFireScale: "0.0"
+      enableWelcomeMessage: true
+      welcomeMessage: "Welcome to our Killing Floor 2 server!"
+      serverMOTD: "Good luck and have fun!"
+      clanMotto: "KF2 Server"
+
+      # Multiplayer Settings
+      enableMapObjectives: true
+      enableMapVoting: true
+      mapVoteDuration: 60
+      mapVotePercentage: "0.0"
+      emptyServerDelay: 120
+
+      # Gameplay Modifiers
+      goreLevel: 2
+      disablePickupsWhenFull: false
+      weaponSpawnModifier: "1.0"
+      zedHealthModifier: "1.0"
+      zedHeadHealthModifier: "1.0"
+      zedMovementSpeedModifier: "1.0"
+      initialSpawnRateModifier: "1.0"
+      maxSpawnRateModifier: "1.0"
+
+      # Analytics
+      enableGameAnalytics: true
+      recordGameStats: false
+
+    # LinuxGSM configuration
+    gsm:
+      steamUser: "your-steam-username"
+      steamPass: "your-steam-password"

@@ -1,0 +1,11 @@
+[submodule "_docs/linuxgsm-configs"]
+	path = _docs/linuxgsm-configs
+	url = https://github.com/GameServerManagers/LinuxGSM.git
+	branch = master
+[submodule "_docs/game-server-configs"]
+	path = _docs/game-server-configs
+	url = https://github.com/GameServerManagers/Game-Server-Configs.git
+	branch = main
+[submodule "_docs/linuxgsm"]
+	path = _docs/linuxgsm
+	url = https://github.com/GameServerManagers/LinuxGSM.git

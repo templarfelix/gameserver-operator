@@ -18,6 +18,9 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"strings"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -120,10 +123,7 @@ func (r *ProjectZomboidReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	configMapName := instance.Name + "-configmap"
-	configData := map[string]string{
-		"pzserver.cfg": instance.Spec.Config.GSM,
-		"server.ini":   instance.Spec.Config.Server,
-	}
+	configData := r.generateProjectZomboidConfigData(instance)
 	if err := ReconcileConfigMap(ctx, r.Client, instance, configMapName, configData); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -160,38 +160,7 @@ func (r *ProjectZomboidReconciler) reconcileDeployment(ctx context.Context, inst
 					Tolerations:  instance.Spec.Tolerations,
 					Affinity:     instance.Spec.Affinity,
 					InitContainers: []corev1.Container{
-						{
-							Name:  "fix-permissions",
-							Image: "busybox",
-							Command: []string{
-								"sh", "-c", `
-								mkdir -p /data/config-lgsm/pzserver/ &&
-								mkdir -p /data/serverfiles/ &&
-								cp /tmp/config-gsm/pzserver.cfg /data/config-lgsm/pzserver/pzserver.cfg &&
-								cp /tmp/config-server/server.ini /data/serverfiles/server.ini &&
-								chown -R 1000:1000 /data/config-lgsm/pzserver/ &&
-								chown -R 1000:1000 /data/serverfiles/
-								`,
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "tmp",
-									MountPath: "/tmp",
-								},
-								{
-									Name:      "data",
-									MountPath: "/data",
-								},
-								{
-									Name:      "config-server",
-									MountPath: "/tmp/config-server",
-								},
-								{
-									Name:      "config-gsm",
-									MountPath: "/tmp/config-gsm",
-								},
-							},
-						},
+						getProjectZomboidSetupInitContainer(),
 					},
 					Containers: []corev1.Container{
 						getSecureGameServerContainer("server", instance.Spec.Image, instance.Spec.Resources, []corev1.ContainerPort{
@@ -290,6 +259,135 @@ func (r *ProjectZomboidReconciler) reconcileDeployment(ctx context.Context, inst
 	logger.V(4).Info("Deployment already exists and is up to date", "namespace", found.Namespace, "name", found.Name)
 
 	return nil
+}
+
+// generateProjectZomboidConfigData creates all necessary configuration files for Project Zomboid
+func (r *ProjectZomboidReconciler) generateProjectZomboidConfigData(instance *gameserverv1alpha1.ProjectZomboid) map[string]string {
+	configData := make(map[string]string)
+
+	// Generate server.ini (main server configuration)
+	configData["server.ini"] = generateProjectZomboidServerConfig(&instance.Spec.Config.Game)
+
+	// Generate LinuxGSM config (if custom)
+	if instance.Spec.Config.GSM.ConfigFile != "" {
+		configData["pzserver.cfg"] = instance.Spec.Config.GSM.ConfigFile
+	} else {
+		configData["pzserver.cfg"] = generateProjectZomboidGSMConfig()
+	}
+
+	return configData
+}
+
+// generateProjectZomboidServerConfig creates server.ini content from CRD spec
+func generateProjectZomboidServerConfig(settings *gameserverv1alpha1.ProjectZomboidServerConfig) string {
+	var lines []string
+
+	lines = append(lines, fmt.Sprintf("ServerName=%s", settings.ServerName))
+	lines = append(lines, fmt.Sprintf("ServerDescription=%s", settings.ServerDescription))
+
+	if settings.Password != "" {
+		lines = append(lines, fmt.Sprintf("Password=%s", settings.Password))
+	}
+	if settings.AdminPassword != "" {
+		lines = append(lines, fmt.Sprintf("AdminPassword=%s", settings.AdminPassword))
+	}
+
+	lines = append(lines, fmt.Sprintf("MaxPlayers=%d", settings.MaxPlayers))
+	lines = append(lines, fmt.Sprintf("DefaultPort=%d", settings.DefaultPort))
+	lines = append(lines, fmt.Sprintf("UDPPort=%d", settings.UDPPort))
+
+	if settings.ResetID != 0 {
+		lines = append(lines, fmt.Sprintf("ResetID=%d", settings.ResetID))
+	}
+
+	lines = append(lines, fmt.Sprintf("SaveWorldEveryMinutes=%d", settings.SaveWorldEveryMinutes))
+	lines = append(lines, fmt.Sprintf("PlayerRespawnWithSelf=%d", settings.PlayerRespawnWithSelf))
+	lines = append(lines, fmt.Sprintf("PlayerRespawnWithOther=%d", settings.PlayerRespawnWithOther))
+
+	lines = append(lines, fmt.Sprintf("DropOffWhiteListedObjects=%s", boolToString(settings.DropOffWhiteListedObjects)))
+	lines = append(lines, fmt.Sprintf("FastForwardMultiplier=%d", settings.FastForwardMultiplier))
+	lines = append(lines, fmt.Sprintf("PauseOnEmptyServer=%s", boolToString(settings.PauseOnEmptyServer)))
+	lines = append(lines, fmt.Sprintf("MaxAccountsPerUser=%d", settings.MaxAccountsPerUser))
+
+	lines = append(lines, fmt.Sprintf("PVP=%s", boolToString(settings.PVP)))
+	lines = append(lines, fmt.Sprintf("SafehouseAllowRespawn=%s", boolToString(settings.SafehouseAllowRespawn)))
+	lines = append(lines, fmt.Sprintf("SafehouseAllowTrepass=%s", boolToString(settings.SafehouseAllowTrepass)))
+
+	lines = append(lines, fmt.Sprintf("SleepAllowed=%s", boolToString(settings.SleepAllowed)))
+	lines = append(lines, fmt.Sprintf("DamageMultiplier=%s", settings.DamageMultiplier))
+	lines = append(lines, fmt.Sprintf("BleedingChance=%s", settings.BleedingChance))
+	lines = append(lines, fmt.Sprintf("MinutesPerPage=%s", settings.MinutesPerPage))
+
+	lines = append(lines, fmt.Sprintf("HoursForLootRespawn=%s", settings.HoursForLootRespawn))
+	lines = append(lines, fmt.Sprintf("MaxItemsForLootRespawn=%s", settings.MaxItemsForLootRespawn))
+	lines = append(lines, fmt.Sprintf("ConstructionPreRequisites=%s", boolToString(settings.ConstructionPreRequisites)))
+
+	lines = append(lines, fmt.Sprintf("Nutrition=%s", boolToString(settings.Nutrition)))
+	lines = append(lines, fmt.Sprintf("FoodRotSpeed=%s", settings.FoodRotSpeed))
+	lines = append(lines, fmt.Sprintf("WorldEraseSpeed=%d", settings.WorldEraseSpeed))
+
+	lines = append(lines, fmt.Sprintf("PlayerSafehouseCooldown=%s", settings.PlayerSafehouseCooldown))
+	lines = append(lines, fmt.Sprintf("AdminSafehouseCooldown=%s", settings.AdminSafehouseCooldown))
+	lines = append(lines, fmt.Sprintf("SafehouseDaySurvivor=%s", settings.SafehouseDaySurvivor))
+
+	lines = append(lines, fmt.Sprintf("RemoveExpiredZombies=%s", boolToString(settings.RemoveExpiredZombies)))
+	lines = append(lines, fmt.Sprintf("SafehouseAllowDestroy=%s", boolToString(settings.SafehouseAllowDestroy)))
+	lines = append(lines, fmt.Sprintf("AllowDestructionBySledgehammer=%s", boolToString(settings.AllowDestructionBySledgehammer)))
+
+	lines = append(lines, fmt.Sprintf("MinutesPerDay=%s", settings.MinutesPerDay))
+	lines = append(lines, fmt.Sprintf("ZombieLureDistance=%s", settings.ZombieLureDistance))
+	lines = append(lines, fmt.Sprintf("ZombieLureInterval=%d", settings.ZombieLureInterval))
+
+	lines = append(lines, fmt.Sprintf("GlobalChat=%s", boolToString(settings.GlobalChat)))
+	lines = append(lines, fmt.Sprintf("ChatStreams=%d", settings.ChatStreams))
+
+	if settings.ServerWelcomeMessage != "" {
+		lines = append(lines, fmt.Sprintf("ServerWelcomeMessage=%s", settings.ServerWelcomeMessage))
+	}
+
+	lines = append(lines, fmt.Sprintf("OpenWhitelistMod=%s", settings.OpenWhitelistMod))
+	lines = append(lines, fmt.Sprintf("BannedPlayerKickedTime=%d", settings.BannedPlayerKickedTime))
+
+	if settings.ServerPlayerID != 0 {
+		lines = append(lines, fmt.Sprintf("ServerPlayerID=%d", settings.ServerPlayerID))
+	}
+
+	lines = append(lines, fmt.Sprintf("PingLimit=%d", settings.PingLimit))
+
+	if settings.WorkshopItems != "" {
+		lines = append(lines, fmt.Sprintf("WorkshopItems=%s", settings.WorkshopItems))
+	}
+	if settings.Mods != "" {
+		lines = append(lines, fmt.Sprintf("Mods=%s", settings.Mods))
+	}
+
+	lines = append(lines, fmt.Sprintf("Map=%s", settings.Map))
+	lines = append(lines, fmt.Sprintf("ZombiePopulation=%d", settings.ZombiePopulation))
+	lines = append(lines, fmt.Sprintf("ZombieMigrateDistance=%d", settings.ZombieMigrateDistance))
+	lines = append(lines, fmt.Sprintf("ZombieRespawnRate=%d", settings.ZombieRespawnRate))
+	lines = append(lines, fmt.Sprintf("ZombieRespawnPeriod=%d", settings.ZombieRespawnPeriod))
+
+	return strings.Join(lines, "\n")
+}
+
+// generateProjectZomboidGSMConfig creates LinuxGSM config file content
+func generateProjectZomboidGSMConfig() string {
+	return `# LinuxGSM configuration for Project Zomboid
+# Generated by GameServer Operator
+
+# Server details
+servicename="pzserver"
+appid="108600"
+
+# SteamCMD Branch
+branch="-beta"
+
+# Required ports
+port="16261"
+queryport="16261"
+
+# Notification alerts
+# (email and other alerts can be configured here)`
 }
 
 // SetupWithManager sets up the controller with the Manager.

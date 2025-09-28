@@ -59,7 +59,94 @@ persistence:
 Controllers follow standard Kubernetes operator pattern:
 1. Reconcile PersistentVolumeClaim for game data (respects preserveOnDelete)
 2. Reconcile Services (TCP/UDP separated)
-3. Manage game server Pod deployment
+3. Manage game server Pod deployment with dynamically configured ports based on CRD spec
+
+## CRD Configuration Pattern
+
+**IMPORTANT**: All game CRDs must follow this standardized configuration pattern going forward. This pattern was established after refactoring ARK, Minecraft, DayZ, and Project Zomboid implementations.
+
+### CRD Structure Requirements
+
+Each game CRD must have the following structure:
+
+```go
+type GameXSpec struct {
+    //+kubebuilder:default="gameservermanagers/gameserver:gamename"
+    Image string `json:"image"`
+
+    Base `json:",inline"`  // Embedded base configuration
+
+    Config GameXConfig `json:"config,omitempty"`
+}
+
+type GameXConfig struct {
+    // Game-specific server configuration
+    Game GameXServerConfig `json:"game,omitempty"`
+
+    // LinuxGSM specific configuration
+    GSM ArkGSMConfig `json:"gsm,omitempty"`
+}
+```
+
+### Configuration Generation Pattern
+
+Controllers must implement these functions:
+
+1. **`generateGameXConfigData(instance *gameserverv1alpha1.GameX) map[string]string`**
+   - Returns a map of filename → content for all config files
+   - Handles custom vs default GSM config
+   - Calls game-specific config generators
+
+2. **`generateGameXServerConfig(settings *gameserverv1alpha1.GameXServerConfig) string`**
+   - Converts CRD spec fields to game server config file format
+   - Handles all supported config options
+   - Uses appropriate formatting (key=value, key="value", etc.)
+
+3. **`generateGameXGSMConfig() string`**
+   - Provides default LinuxGSM configuration
+   - Includes all required fields: servicename, appid, ports
+
+### Key Implementation Requirements
+
+1. **No Generic String Fields**: Never use `Server string` or `GSM string` fields in CRDs
+2. **Structured Configuration**: Embed configuration details in CRD types with proper validation
+3. **Type Safety**: Use appropriate Go types (int32, bool, custom enums) instead of strings
+4. **Default Values**: Use kubebuilder defaults extensively
+5. **Validation**: Include validation annotations where appropriate
+6. **Documentation**: Document every config field with comments
+
+### Controller Configuration Pattern
+
+In the controller's `Reconcile` method, replace string-based config with:
+
+```go
+configMapName := instance.Name + "-configmap"
+configData := r.generateGameXConfigData(instance)
+if err := ReconcileConfigMap(ctx, r.Client, instance, configMapName, configData); err != nil {
+    return reconcile.Result{}, err
+}
+```
+
+### Base Configuration
+
+All CRDs embed the `Base` struct which provides:
+- Persistence configuration (PVC size, storage class, preserve on delete)
+- Resource requirements (CPU/memory limits)
+- Port configurations (dynamic service creation)
+- Node selector, tolerations, affinity
+
+### Example Configuration Output
+
+For a DayZ server, this generates:
+- `dayzserver.server.cfg` - Game server settings from CRD
+- `dayzserver.cfg` - LinuxGSM configuration (custom or default)
+
+**Benefits of this pattern:**
+- Type safety and validation
+- IDE autocompletion and documentation
+- Consistent API across all games
+- Easy to extend with new config options
+- Reduced runtime errors from misconfiguration
 
 **Development Notes:**
 - Uses controller-runtime v0.16.3
@@ -67,6 +154,8 @@ Controllers follow standard Kubernetes operator pattern:
 - Follows standard Kubebuilder project structure
 - Includes RBAC configurations in `config/rbac/`
 - Sample configurations in `config/samples/`
+- Dynamic port configuration: Game server ports are automatically configured based on CRD port specifications
+- Robust reconciliation: Controller handles deployment updates and resource reconciliation reliably
 
 **Testing:**
 - Unit tests with envtest

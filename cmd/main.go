@@ -33,6 +33,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	gameserverv1alpha1 "github.com/templarfelix/gameserver-operator/api/v1alpha1"
+
 	"github.com/templarfelix/gameserver-operator/internal/controller"
 	//+kubebuilder:scaffold:imports
 )
@@ -104,6 +105,34 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ProjectZomboid")
+		os.Exit(1)
+	}
+	if err = (&controller.MinecraftReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Minecraft")
+		os.Exit(1)
+	}
+	if err = (&controller.ArkReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Ark")
+		os.Exit(1)
+	}
+	if err = (&controller.GmodReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Gmod")
+		os.Exit(1)
+	}
+	if err = (&controller.Kf2Reconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Kf2")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

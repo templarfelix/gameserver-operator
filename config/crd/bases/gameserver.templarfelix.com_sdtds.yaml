@@ -4,20 +4,20 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.19.0
-  name: projectzomboids.gameserver.templarfelix.com
+  name: sdtds.gameserver.templarfelix.com
 spec:
   group: gameserver.templarfelix.com
   names:
-    kind: ProjectZomboid
-    listKind: ProjectZomboidList
-    plural: projectzomboids
-    singular: projectzomboid
+    kind: Sdtd
+    listKind: SdtdList
+    plural: sdtds
+    singular: sdtd
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ProjectZomboid is the Schema for the projectzomboids API
+        description: Sdtd is the Schema for the sdtds API
         properties:
           apiVersion:
             description: |-
@@ -37,7 +37,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: ProjectZomboidSpec defines the desired state of ProjectZomboid
+            description: SdtdSpec defines the desired state of Sdtd
             properties:
               affinity:
                 description: Affinity is the affinity for the pod
@@ -931,230 +931,428 @@ spec:
                 description: Annotations for the pod template
                 type: object
               config:
-                description: ProjectZomboidConfig defines configuration for Project
-                  Zomboid & LinuxGSM
+                description: SdtdConfig defines configuration for 7 Days to Die &
+                  LinuxGSM
                 properties:
                   game:
-                    description: Game server configuration (server.ini)
+                    description: Game server configuration (serverconfig.xml)
                     properties:
-                      adminPassword:
-                        default: adminpassword
-                        description: Admin password
+                      adminFileName:
+                        default: serveradmin.xml
+                        description: Admin file name
                         type: string
-                      adminSafehouseCooldown:
-                        default: "2"
-                        description: Admin safehouse cooldown
-                        type: string
-                      allowDestructionBySledgehammer:
+                      airDropFrequency:
+                        default: 72
+                        description: Air drop frequency (hours)
+                        format: int32
+                        type: integer
+                      airDropMarker:
                         default: true
-                        description: Enable punching
+                        description: Air drop marker
                         type: boolean
-                      bannedPlayerKickedTime:
-                        default: 1
-                        description: Ban kick time
-                        format: int32
-                        type: integer
-                      bleedingChance:
-                        default: "100"
-                        description: Bleeding chance (0-100)
-                        type: string
-                      chatStreams:
-                        default: 0
-                        description: Chat streams
-                        format: int32
-                        type: integer
-                      constructionPreRequisites:
-                        default: true
-                        description: Construction pre-requisites
-                        type: boolean
-                      damageMultiplier:
-                        default: "3"
-                        description: Damage multiplier
-                        type: string
-                      defaultPort:
-                        default: 16261
-                        description: Port for the server
-                        format: int32
-                        type: integer
-                      dropOffWhiteListedObjects:
-                        description: Drop off white-listed objects when player dies
-                        type: boolean
-                      fastForwardMultiplier:
-                        default: 1
-                        description: Fast forward multiplier (advanced)
-                        format: int32
-                        type: integer
-                      foodRotSpeed:
-                        default: "1.0"
-                        description: Food rot speed multiplier
-                        type: string
-                      globalChat:
-                        default: false
-                        description: Enable global chat
-                        type: boolean
-                      hoursForLootRespawn:
-                        default: "0.0"
-                        description: Hours for loot respawn
-                        type: string
-                      map:
-                        default: Muldraugh, KY
-                        description: Map (what world generator to use)
-                        enum:
-                        - Muldraugh, KY
-                        type: string
-                      maxAccountsPerUser:
-                        default: 0
-                        description: Maximum accounts per user
-                        format: int32
-                        type: integer
-                      maxItemsForLootRespawn:
-                        default: "4"
-                        description: Max items for loot respawn
-                        type: string
-                      maxPlayers:
-                        default: 32
-                        description: Maximum players
-                        format: int32
-                        type: integer
-                      minutesPerDay:
-                        default: "1.0"
-                        description: Minutes surviving bonus multiplier
-                        type: string
-                      minutesPerPage:
-                        default: "1.0"
-                        description: Minutes per page (for reading books etc)
-                        type: string
-                      mods:
-                        description: Mods (comma-separated mod names)
-                        type: string
-                      nutrition:
-                        default: true
-                        description: Nutrition enabled
-                        type: boolean
-                      openWhitelistMod:
-                        default: server
-                        description: Open whitelist mod
-                        type: string
-                      password:
-                        description: Password for joining the server
-                        type: string
-                      pauseOnEmptyServer:
-                        default: false
-                        description: Pause when no players online
-                        type: boolean
-                      pingLimit:
-                        default: 400
-                        description: Ping limit
-                        format: int32
-                        type: integer
-                      playerRespawnWithOther:
-                        default: 0
-                        description: Player respawn time in hours
-                        format: int32
-                        type: integer
-                      playerRespawnWithSelf:
-                        default: 0
-                        description: Player respawn time in days
-                        format: int32
-                        type: integer
-                      playerSafehouseCooldown:
-                        default: "2"
-                        description: Player safehouse cooldown
-                        type: string
-                      pvp:
-                        default: true
-                        description: Enable PVP
-                        type: boolean
-                      removeExpiredZombies:
-                        default: false
-                        description: Remove expire zombie
-                        type: boolean
-                      resetId:
-                        description: Reset ID - increments by 1 every time server
-                          configuration is reset
-                        format: int32
-                        type: integer
-                      safehouseAllowDestroy:
-                        default: false
-                        description: Allow non-members to destroy safehouses
-                        type: boolean
-                      safehouseAllowRespawn:
-                        default: true
-                        description: Safehouse allow respawn
-                        type: boolean
-                      safehouseAllowTrepass:
-                        default: false
-                        description: Safehouse allow non-members claim
-                        type: boolean
-                      safehouseDaySurvivor:
-                        default: "0"
-                        description: Safehouse day survived to claim
-                        type: string
-                      saveWorldEveryMinutes:
+                      bedrollDeadZoneSize:
                         default: 15
-                        description: Save interval (minutes)
+                        description: Bedroll deadzone size
+                        format: int32
+                        type: integer
+                      bedrollExpiryTime:
+                        default: 45
+                        description: Bedroll expiry time in days
+                        format: int32
+                        type: integer
+                      blockDamageAI:
+                        default: 100
+                        description: Block damage by AI (%)
+                        format: int32
+                        type: integer
+                      blockDamageAIBM:
+                        default: 100
+                        description: Block damage by AI during blood moon (%)
+                        format: int32
+                        type: integer
+                      blockDamagePlayer:
+                        default: 100
+                        description: Block damage by players (%)
+                        format: int32
+                        type: integer
+                      bloodMoonEnemyCount:
+                        default: 8
+                        description: Blood moon enemy count per player
+                        format: int32
+                        type: integer
+                      bloodMoonFrequency:
+                        default: 7
+                        description: Blood moon frequency (days, 0=none)
+                        format: int32
+                        type: integer
+                      bloodMoonRange:
+                        default: 0
+                        description: Blood moon range (days deviation)
+                        format: int32
+                        type: integer
+                      bloodMoonWarning:
+                        default: 8
+                        description: Blood moon warning hour
+                        format: int32
+                        type: integer
+                      buildCreate:
+                        default: false
+                        description: Cheat mode
+                        type: boolean
+                      dayLightLength:
+                        default: 18
+                        description: Game hours of sunlight per day
+                        format: int32
+                        type: integer
+                      dayNightLength:
+                        default: 60
+                        description: Real time minutes per game day
+                        format: int32
+                        type: integer
+                      dropOnDeath:
+                        default: 1
+                        description: Drop on death (0=nothing, 1=everything, 2=toolbelt,
+                          3=backpack, 4=delete all)
+                        format: int32
+                        type: integer
+                      dropOnQuit:
+                        default: 0
+                        description: Drop on quit (0=nothing, 1=everything, 2=toolbelt,
+                          3=backpack)
+                        format: int32
+                        type: integer
+                      dynamicMeshEnabled:
+                        default: true
+                        description: Dynamic mesh system
+                        type: boolean
+                      dynamicMeshLandClaimBuffer:
+                        default: 3
+                        description: Dynamic mesh land claim buffer
+                        format: int32
+                        type: integer
+                      dynamicMeshLandClaimOnly:
+                        default: true
+                        description: Dynamic mesh only in land claims
+                        type: boolean
+                      dynamicMeshMaxItemCache:
+                        default: 3
+                        description: Dynamic mesh max item cache
+                        format: int32
+                        type: integer
+                      eacEnabled:
+                        default: true
+                        description: Technical settings
+                        type: boolean
+                      enableMapRendering:
+                        default: false
+                        description: Enable map rendering for dashboard
+                        type: boolean
+                      enemyDifficulty:
+                        default: 0
+                        description: Enemy difficulty (0=Normal, 1=Feral)
+                        format: int32
+                        type: integer
+                      enemySpawnMode:
+                        default: true
+                        description: Zombie settings
+                        type: boolean
+                      gameDifficulty:
+                        default: 1
+                        description: Difficulty
+                        format: int32
+                        type: integer
+                      gameMode:
+                        default: GameModeSurvival
+                        description: GameModeSurvival
+                        type: string
+                      gameName:
+                        description: Game name affects save game and seed
+                        type: string
+                      gameWorld:
+                        default: Navezgane
+                        description: GAMEPLAY - World
+                        type: string
+                      gameWorldSeed:
+                        description: World generation seed (for RWG worlds)
+                        type: string
+                      gameWorldSize:
+                        default: 6144
+                        description: World generation size
+                        format: int32
+                        type: integer
+                      hideCommandExecutionLog:
+                        default: 0
+                        description: Hide command execution log (0=all, 1=hide from
+                          telnet, 2=hide from clients, 3=hide all)
+                        format: int32
+                        type: integer
+                      landClaimCount:
+                        default: 3
+                        description: Land claim options
+                        format: int32
+                        type: integer
+                      landClaimDeadZone:
+                        default: 30
+                        description: Land claim deadzone distance
+                        format: int32
+                        type: integer
+                      landClaimDecayMode:
+                        default: 0
+                        description: Land claim decay mode (0=Slow, 1=Fast, 2=None)
+                        format: int32
+                        type: integer
+                      landClaimExpiryTime:
+                        default: 7
+                        description: Land claim expiry time (days)
+                        format: int32
+                        type: integer
+                      landClaimOfflineDelay:
+                        default: 0
+                        description: Land claim offline delay (minutes)
+                        format: int32
+                        type: integer
+                      landClaimOfflineDurabilityModifier:
+                        default: 4
+                        description: Land claim offline durability modifier
+                        format: int32
+                        type: integer
+                      landClaimOnlineDurabilityModifier:
+                        default: 4
+                        description: Land claim online durability modifier
+                        format: int32
+                        type: integer
+                      landClaimSize:
+                        default: 41
+                        description: Land claim size in blocks
+                        format: int32
+                        type: integer
+                      language:
+                        default: English
+                        description: Primary language for players on this server
+                        type: string
+                      lootAbundance:
+                        default: 100
+                        description: Loot settings
+                        format: int32
+                        type: integer
+                      lootRespawnDays:
+                        default: 7
+                        description: Loot respawn days
+                        format: int32
+                        type: integer
+                      maxChunkAge:
+                        default: -1
+                        description: Chunk age limit in days (-1=disabled)
+                        format: int32
+                        type: integer
+                      maxQueuedMeshLayers:
+                        default: 1000
+                        description: Max queued mesh layers
+                        format: int32
+                        type: integer
+                      maxSpawnedAnimals:
+                        default: 50
+                        description: Animal limit
+                        format: int32
+                        type: integer
+                      maxSpawnedZombies:
+                        default: 64
+                        description: Performance - Zombie limits
+                        format: int32
+                        type: integer
+                      maxUncoveredMapChunksPerPlayer:
+                        default: 131072
+                        description: Max uncovered map chunks per player
+                        format: int32
+                        type: integer
+                      partySharedKillRange:
+                        default: 100
+                        description: Multiplayer
+                        format: int32
+                        type: integer
+                      persistentPlayerProfiles:
+                        default: false
+                        description: Persistent player profiles
+                        type: boolean
+                      playerKillingMode:
+                        default: 3
+                        description: Player killing mode (0=No Killing, 1=Allies Only,
+                          2=Strangers Only, 3=Everyone)
+                        format: int32
+                        type: integer
+                      playerSafeZoneHours:
+                        default: 5
+                        description: Player safe zone hours
+                        format: int32
+                        type: integer
+                      playerSafeZoneLevel:
+                        default: 5
+                        description: Player safe zone level
+                        format: int32
+                        type: integer
+                      region:
+                        default: NorthAmericaEast
+                        description: The region this server is in
+                        enum:
+                        - NorthAmericaEast
+                        - NorthAmericaWest
+                        - CentralAmerica
+                        - SouthAmerica
+                        - Europe
+                        - Russia
+                        - Asia
+                        - MiddleEast
+                        - Africa
+                        - Oceania
+                        type: string
+                      saveDataLimit:
+                        default: -1
+                        description: Save data limit in MB (-1=disabled)
+                        format: int32
+                        type: integer
+                      serverAdminSlots:
+                        default: 0
+                        description: Admin slots (can join when server full)
+                        format: int32
+                        type: integer
+                      serverAdminSlotsPermission:
+                        default: 0
+                        description: Required permission level for admin slots
                         format: int32
                         type: integer
                       serverDescription:
-                        default: A Project Zomboid Server
-                        description: Server description
+                        default: A 7 Days to Die server
+                        description: Server description shown in server browser
                         type: string
+                      serverDisabledNetworkProtocols:
+                        default: SteamNetworking
+                        description: Networking protocols to disable
+                        type: string
+                      serverLoginConfirmationText:
+                        description: Server login confirmation text
+                        type: string
+                      serverMaxAllowedViewDistance:
+                        default: 12
+                        description: Max allowed view distance
+                        format: int32
+                        type: integer
+                      serverMaxPlayerCount:
+                        default: 8
+                        description: Slots
+                        format: int32
+                        type: integer
+                      serverMaxWorldTransferSpeedKiBs:
+                        default: 512
+                        description: Maximum world transfer speed in KiB/s
+                        format: int32
+                        type: integer
                       serverName:
-                        default: Project Zomboid Server
-                        description: Server name
+                        default: 7 Days to Die Server
+                        description: Server representation
                         type: string
-                      serverPlayerID:
-                        description: Server player ID
+                      serverPassword:
+                        description: Password to gain entry to the server
+                        type: string
+                      serverPort:
+                        default: 26900
+                        description: Networking
                         format: int32
                         type: integer
-                      serverWelcomeMessage:
-                        description: Server welcome message
-                        type: string
-                      sleepAllowed:
-                        default: true
-                        description: Sleep allowed
-                        type: boolean
-                      udpPort:
-                        default: 16262
-                        description: UDP port for the server
-                        format: int32
-                        type: integer
-                      workshopItems:
-                        description: Workshop items (comma-separated Steam workshop
-                          IDs)
-                        type: string
-                      worldEraseSpeed:
-                        default: 90
-                        description: World erase speed
-                        format: int32
-                        type: integer
-                      zombieLureDistance:
-                        default: "0.0"
-                        description: Zombie lure distance
-                        type: string
-                      zombieLureInterval:
+                      serverReservedSlots:
                         default: 0
-                        description: Zombie lure interval
+                        description: Reserved slots count (out of MaxPlayerCount)
                         format: int32
                         type: integer
-                      zombieMigrateDistance:
-                        default: 1000
-                        description: Zombie migrate distance
+                      serverReservedSlotsPermission:
+                        default: 100
+                        description: Required permission level to use reserved slots
                         format: int32
                         type: integer
-                      zombiePopulation:
+                      serverVisibility:
+                        default: 2
+                        description: Server visibility (2=public, 1=friends only,
+                          0=unlisted)
+                        format: int32
+                        type: integer
+                      serverWebsiteURL:
+                        description: Server website URL
+                        type: string
+                      telnetEnabled:
+                        default: true
+                        description: Telnet
+                        type: boolean
+                      telnetFailedLoginLimit:
+                        default: 10
+                        description: Telnet failed login limit before blocking
+                        format: int32
+                        type: integer
+                      telnetFailedLoginsBlocktime:
+                        default: 10
+                        description: Telnet block duration in seconds
+                        format: int32
+                        type: integer
+                      telnetPassword:
+                        description: Telnet password
+                        type: string
+                      telnetPort:
+                        default: 8081
+                        description: Telnet port
+                        format: int32
+                        type: integer
+                      terminalWindowEnabled:
+                        default: true
+                        description: Terminal window (Windows only)
+                        type: boolean
+                      twitchBloodMoonAllowed:
+                        default: false
+                        description: Allow twitch actions during blood moon
+                        type: boolean
+                      twitchServerPermission:
+                        default: 90
+                        description: Twitch integration permission level
+                        format: int32
+                        type: integer
+                      webDashboardEnabled:
+                        default: false
+                        description: Admin interfaces - Web Dashboard
+                        type: boolean
+                      webDashboardPort:
+                        default: 8080
+                        description: Port of the web dashboard
+                        format: int32
+                        type: integer
+                      webDashboardUrl:
+                        description: External URL for web dashboard
+                        type: string
+                      xpMultiplier:
+                        default: 100
+                        description: XP multiplier (%)
+                        format: int32
+                        type: integer
+                      zombieBMMove:
                         default: 3
-                        description: Zombie population
+                        description: Zombie blood moon movement
                         format: int32
                         type: integer
-                      zombieRespawnPeriod:
-                        default: 1000
-                        description: Zombies respawn period
+                      zombieFeralMove:
+                        default: 3
+                        description: Zombie feral movement
                         format: int32
                         type: integer
-                      zombieRespawnRate:
-                        default: -1
-                        description: Zombies respawn rate
+                      zombieFeralSense:
+                        default: 0
+                        description: Zombie feral sense (0=Off, 1=Day, 2=Night, 3=All)
+                        format: int32
+                        type: integer
+                      zombieMove:
+                        default: 0
+                        description: Zombie movement (0=walk, 1=jog, 2=run, 3=sprint,
+                          4=nightmare)
+                        format: int32
+                        type: integer
+                      zombieMoveNight:
+                        default: 3
+                        description: Zombie movement at night
                         format: int32
                         type: integer
                     type: object
@@ -1170,7 +1368,7 @@ spec:
                 description: EditorPassword is the password for the code-server editor
                 type: string
               image:
-                default: gameservermanagers/gameserver:project-zomboid
+                default: gameservermanagers/gameserver:7dtd
                 type: string
               loadBalancerIP:
                 type: string
@@ -1367,7 +1565,7 @@ spec:
             - resources
             type: object
           status:
-            description: ProjectZomboidStatus defines the observed state of ProjectZomboid
+            description: SdtdStatus defines the observed state of Sdtd
             properties:
               conditions:
                 description: Conditions represent the latest available observations
