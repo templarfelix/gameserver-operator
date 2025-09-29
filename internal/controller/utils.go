@@ -41,38 +41,6 @@ func getGameServerSecurityContext() *corev1.SecurityContext {
 	}
 }
 
-// getDayZSetupInitContainer returns an init container specifically for DayZ config setup
-// DayZ configuration paths:
-// - GSM config: /data/config-lgsm/dayzserver/dayzserver.cfg (LinuxGSM config)
-// - Server config: /data/serverfiles/cfg/dayzserver.server.cfg (DayZ server config)
-// More info: https://linuxgsm.com/lgsm/dayzserver/
-func getDayZSetupInitContainer() corev1.Container {
-	return corev1.Container{
-		Name:    SetupContainerName,
-		Image:   SetupContainerImage,
-		Command: []string{"sh", "-c"},
-		Args: []string{`
-			set -eu
-
-			# Create DayZ specific directories
-			mkdir -p /data/config-lgsm/dayzserver /data/serverfiles/cfg
-
-			# Always copy latest DayZ config files (ensures ConfigMap updates are applied)
-			cp /configs/dayzserver.cfg /data/config-lgsm/dayzserver/dayzserver.cfg
-			cp /configs/dayzserver.server.cfg /data/serverfiles/cfg/dayzserver.server.cfg
-
-			# Set ownership for linuxgsm user (1000:1000)
-			chown -R 1000:1000 /data/config-lgsm/dayzserver /data/serverfiles/cfg
-
-			echo "DayZ config setup completed successfully"
-		`},
-		VolumeMounts: []corev1.VolumeMount{
-			{Name: DataVolumeName, MountPath: "/data"},
-			{Name: ConfigsVolumeName, MountPath: "/configs"},
-		},
-	}
-}
-
 // getProjectZomboidSetupInitContainer returns an init container specifically for Project Zomboid config setup
 // Project Zomboid configuration paths (DIFFERENT from DayZ):
 // - GSM config: /data/config-lgsm/pzserver/pzserver.cfg (LinuxGSM config)
@@ -223,8 +191,8 @@ func applyResourceDefaults(resources corev1.ResourceRequirements) corev1.Resourc
 	return resources
 }
 
-// getSecureCodeServerContainer returns a code-server container
-func getSecureCodeServerContainer(password string) corev1.Container {
+// GetSecureCodeServerContainer returns a code-server container
+func GetSecureCodeServerContainer(password string) corev1.Container {
 	return corev1.Container{
 		Name:  "code-server",
 		Image: "codercom/code-server:latest",
@@ -278,14 +246,18 @@ func getSecureCodeServerContainer(password string) corev1.Container {
 	}
 }
 
-// getSecureGameServerContainer returns a game server container - let LinuxGSM handle user setup
-func getSecureGameServerContainer(name, image string, resources corev1.ResourceRequirements, ports []corev1.ContainerPort) corev1.Container {
+// GetSecureGameServerContainer returns a game server container - let LinuxGSM handle user setup
+func GetSecureGameServerContainer(name, image string, resources corev1.ResourceRequirements, ports []corev1.ContainerPort) corev1.Container {
 	return corev1.Container{
-		Name:            name,
-		Image:           image,
-		Resources:       applyResourceDefaults(resources),
-		Ports:           ports,
-		SecurityContext: getGameServerSecurityContext(),
+		Name:      name,
+		Image:     image,
+		Resources: applyResourceDefaults(resources),
+		Ports:     ports,
+		// Adding security context with specific settings to address permission issues
+		SecurityContext: &corev1.SecurityContext{
+			RunAsUser:  func(i int64) *int64 { return &i }(0), // Run as root to avoid permission issues
+			RunAsGroup: func(i int64) *int64 { return &i }(0), // Run as root group
+		},
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      DataVolumeName,
@@ -512,20 +484,4 @@ func getSdtdSetupInitContainer() corev1.Container {
 			{Name: ConfigsVolumeName, MountPath: "/configs"},
 		},
 	}
-}
-
-// boolToInt converts boolean to integer for various configs
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
-// boolToString converts boolean to string for various configs
-func boolToString(b bool) string {
-	if b {
-		return "true"
-	}
-	return "false"
 }

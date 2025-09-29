@@ -34,7 +34,6 @@ rules:
   - gameserver.templarfelix.com
   resources:
   - dayzs
-  - projectzomboids
   verbs:
   - create
   - delete
@@ -47,14 +46,12 @@ rules:
   - gameserver.templarfelix.com
   resources:
   - dayzs/finalizers
-  - projectzomboids/finalizers
   verbs:
   - update
 - apiGroups:
   - gameserver.templarfelix.com
   resources:
   - dayzs/status
-  - projectzomboids/status
   verbs:
   - get
   - patch

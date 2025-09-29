@@ -34,7 +34,7 @@ import (
 
 	gameserverv1alpha1 "github.com/templarfelix/gameserver-operator/api/v1alpha1"
 
-	"github.com/templarfelix/gameserver-operator/internal/controller"
+	gamecontroller "github.com/templarfelix/gameserver-operator/internal/controller/game"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -93,46 +93,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controller.DayzReconciler{
+	if err = (&gamecontroller.DayzReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Dayz")
-		os.Exit(1)
-	}
-	if err = (&controller.ProjectZomboidReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ProjectZomboid")
-		os.Exit(1)
-	}
-	if err = (&controller.MinecraftReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Minecraft")
-		os.Exit(1)
-	}
-	if err = (&controller.ArkReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Ark")
-		os.Exit(1)
-	}
-	if err = (&controller.GmodReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Gmod")
-		os.Exit(1)
-	}
-	if err = (&controller.Kf2Reconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Kf2")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

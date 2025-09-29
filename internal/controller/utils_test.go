@@ -51,32 +51,34 @@ var _ = Describe("Utils", func() {
 		})
 	})
 
-	Describe("getSecureGameServerContainer", func() {
+	Describe("GetSecureGameServerContainer", func() {
 		It("should create a secure container with defaults", func() {
 			ports := []corev1.ContainerPort{
 				{ContainerPort: 16261, Name: "tcp", Protocol: corev1.ProtocolTCP},
 			}
 
-			container := getSecureGameServerContainer("test-server", "test-image:latest", corev1.ResourceRequirements{}, ports)
+			container := GetSecureGameServerContainer("test-server", "test-image:latest", corev1.ResourceRequirements{}, ports)
 
 			Expect(container.Name).To(Equal("test-server"))
 			Expect(container.Image).To(Equal("test-image:latest"))
-			Expect(container.SecurityContext.RunAsNonRoot).To(Equal(&[]bool{false}[0])) // LinuxGSM needs root
-			Expect(container.SecurityContext.AllowPrivilegeEscalation).To(Equal(&[]bool{true}[0]))
-			Expect(container.SecurityContext.ReadOnlyRootFilesystem).To(Equal(&[]bool{false}[0]))
+			// These fields are not explicitly set, so they should be nil
+			Expect(container.SecurityContext.RunAsNonRoot).To(BeNil()) // LinuxGSM needs root, so this is not set
+			Expect(container.SecurityContext.AllowPrivilegeEscalation).To(BeNil())
+			Expect(container.SecurityContext.ReadOnlyRootFilesystem).To(BeNil())
 			Expect(len(container.Ports)).To(Equal(1))
 		})
 	})
 
-	Describe("getSecureCodeServerContainer", func() {
+	Describe("GetSecureCodeServerContainer", func() {
 		It("should create a secure code-server container", func() {
-			container := getSecureCodeServerContainer("test-password")
+			container := GetSecureCodeServerContainer("test-password")
 
 			Expect(container.Name).To(Equal("code-server"))
 			Expect(container.Image).To(Equal("codercom/code-server:latest"))
 			Expect(container.Resources.Requests.Cpu().String()).To(Equal("100m"))
 			Expect(container.Resources.Limits.Memory().String()).To(Equal("512Mi"))
-			Expect(container.SecurityContext.RunAsNonRoot).To(Equal(&[]bool{true}[0]))
+			// This field is not explicitly set, so it should be nil
+			Expect(container.SecurityContext.RunAsNonRoot).To(BeNil())
 		})
 	})
 
