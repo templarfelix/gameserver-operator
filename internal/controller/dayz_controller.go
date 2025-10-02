@@ -46,13 +46,13 @@ type DayzReconciler struct {
 // +kubebuilder:rbac:groups=gameserver.templarfelix.com,resources=dayzs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=gameserver.templarfelix.com,resources=dayzs/finalizers,verbs=update
 
-//+kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 
 // Add RBAC for networking resources to fix permission warnings
-//+kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -176,14 +176,14 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 	logger := logf.FromContext(ctx)
 
 	// Generate container ports dynamically from CRD ports
-	var containerPorts []corev1.ContainerPort
-	for _, port := range instance.Spec.Ports {
+	containerPorts := make([]corev1.ContainerPort, len(instance.Spec.Ports))
+	for i, port := range instance.Spec.Ports {
 		containerPort := int32(port.TargetPort.IntValue())
-		containerPorts = append(containerPorts, corev1.ContainerPort{
+		containerPorts[i] = corev1.ContainerPort{
 			ContainerPort: containerPort,
 			Name:          port.Name,
 			Protocol:      port.Protocol,
-		})
+		}
 	}
 
 	k8sResource := &appsv1.Deployment{
@@ -222,7 +222,7 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 							Name:    SetupContainerName,
 							Image:   SetupContainerImage,
 							Command: []string{"sh", "-c"},
-							Args: []string{r.generateDayzSetupScript(instance)},
+							Args:    []string{r.generateDayzSetupScript(instance)},
 							SecurityContext: &corev1.SecurityContext{
 								RunAsUser:  func(i int64) *int64 { return &i }(1000),
 								RunAsGroup: func(i int64) *int64 { return &i }(1000),

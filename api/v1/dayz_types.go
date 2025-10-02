@@ -29,7 +29,7 @@ type DayzSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	//+kubebuilder:default="gameservermanagers/gameserver:dayz"
+	// +kubebuilder:default="gameservermanagers/gameserver:dayz"
 	Image string `json:"image"`
 
 	// Base contains common configuration fields for game server CRDs
@@ -39,7 +39,7 @@ type DayzSpec struct {
 	Config DayzConfig `json:"config,omitempty"`
 
 	// Additional commands to run after copying files
-	//+optional
+	// +optional
 	PostCopyCommands []string `json:"postCopyCommands,omitempty"`
 }
 
@@ -77,7 +77,7 @@ type Base struct {
 // StorageConfig defines the storage configuration for persistent volumes
 type StorageConfig struct {
 	// Size of the persistent volume (default: "10G")
-	//+kubebuilder:default="10G"
+	// +kubebuilder:default="10G"
 	Size string `json:"size,omitempty"`
 
 	// Storage class name for the volume
@@ -89,7 +89,7 @@ type Persistence struct {
 	// Storage configuration
 	StorageConfig StorageConfig `json:"storageConfig,omitempty"`
 
-	//+kubebuilder:default=false
+	// +kubebuilder:default=false
 	PreserveOnDelete bool `json:"preserveOnDelete,omitempty"`
 }
 
