@@ -1,27 +1,29 @@
-# permissions for end users to view dayzs.
+# This rule is not used by the project gameserver-operator itself.
+# It is provided to allow the cluster admin to help manage permissions for users.
+#
+# Grants read-only access to gameserver.templarfelix.com resources.
+# This role is intended for users who need visibility into these resources
+# without permissions to modify them. It is ideal for monitoring purposes and limited-access viewing.
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    app.kubernetes.io/name: clusterrole
-    app.kubernetes.io/instance: dayz-viewer-role
-    app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: gameserver-operator
-    app.kubernetes.io/part-of: gameserver-operator
+    app.kubernetes.io/name: gameserver-operator
     app.kubernetes.io/managed-by: kustomize
   name: dayz-viewer-role
 rules:
-  - apiGroups:
-      - gameserver.templarfelix.com
-    resources:
-      - dayzs
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - gameserver.templarfelix.com
-    resources:
-      - dayzs/status
-    verbs:
-      - get
+- apiGroups:
+  - gameserver.templarfelix.com
+  resources:
+  - dayzs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - gameserver.templarfelix.com
+  resources:
+  - dayzs/status
+  verbs:
+  - get

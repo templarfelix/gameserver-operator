@@ -18,15 +18,6 @@ resources:
   domain: templarfelix.com
   group: gameserver
   kind: Dayz
-  path: github.com/templarfelix/gameserver-operator/api/v1alpha1
-  version: v1alpha1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: templarfelix.com
-  group: gameserver
-  kind: ProjectZomboid
-  path: github.com/templarfelix/gameserver-operator/api/v1alpha1
-  version: v1alpha1
+  path: github.com/templarfelix/gameserver-operator/api/v1
+  version: v1
 version: "3"

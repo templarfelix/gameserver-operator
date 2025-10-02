@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+
 	"golang.org/x/net/context"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -14,11 +15,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/go-logr/logr"
-	gameserverv1alpha1 "github.com/templarfelix/gameserver-operator/api/v1alpha1"
+	gameserverv1 "github.com/templarfelix/gameserver-operator/api/v1"
 )
 
 // initializeDefaultPersistence ensures that all persistence fields have safe defaults
-func initializeDefaultPersistence(persistence *gameserverv1alpha1.Persistence, logger logr.Logger, ownerName string) {
+func initializeDefaultPersistence(persistence *gameserverv1.Persistence, logger logr.Logger, ownerName string) {
 	// Ensure storageConfig is initialized with defaults
 	if persistence.StorageConfig.Size == "" {
 		logger.V(4).Info("Setting default storage size", "owner", ownerName, "size", "10G")
@@ -33,7 +34,7 @@ func initializeDefaultPersistence(persistence *gameserverv1alpha1.Persistence, l
 }
 
 // ReconcilePVC creates or updates a PersistentVolumeClaim for game data storage
-func ReconcilePVC(ctx context.Context, k8sClient client.Client, owner metav1.Object, persistence *gameserverv1alpha1.Persistence) error {
+func ReconcilePVC(ctx context.Context, k8sClient client.Client, owner metav1.Object, persistence *gameserverv1.Persistence) error {
 	logger := log.FromContext(ctx)
 	pvcName := owner.GetName() + "-pvc"
 

@@ -1,0 +1,6 @@
+// Black Mesa server.cfg file
+hostname "Black Mesa: Deathmatch"
+mp_timelimit 900
+mp_fraglimit 30
+mp_teamplay 1
+mp_forcerespawn 1

@@ -1,0 +1,90 @@
+# Ballistic Overkill Dedicated Server Configuration File
+# After changing any configuration you must restart the server to take effect
+
+# Server name as listed in server browser
+ServerName=SERVERNAME
+
+# UDP Server port
+ServerPort=27015
+
+# Server Query Port
+QueryPort=27016
+
+# Max players
+# Valid values are from 2 to 16
+MaxPlayers=12
+
+# Max Spectators
+MaxSpectators=4
+
+# Max ping (in miliseconds)
+# When the client's ping is greater than MaxPing he will be kicked from the server
+# Use 0 (zero) to turn it off.
+MaxPing=0
+
+# Start game map
+# Valid values are:
+# 1: Sunnsquare Mall
+# 2: Corporate Park
+# 3: Hollow
+# 4: Nox Museum
+# 5: Overhead
+# 6: Citadel
+# 7: Hakim
+# 8: Blackfield
+# 9: Wonderdome
+# 10: Reinstate
+GameMap=3
+
+# Game mode
+# Valid values are:
+# 1: Team Deatchmatch
+# 2: Conquest
+# 3: King of the Hill
+# 4: Rounds
+# 5: Free for all
+GameMode=4
+
+# MatchTime
+# value in minutes
+MatchTime=10
+
+#AutoBalance is on?
+# 0 = false
+# 1 = true
+Autobalance=1
+
+# Rounds
+Rounds=7
+
+# RoundTime
+RoundTime=90
+
+# Round warmup time to spawn into the next match
+# value in seconds
+WarmUpTime=26
+
+# Password
+# Set an Password to only selected players be able to enter in your match
+Password=
+
+#DedicatedBroadcast: advanced option.
+# 0: P2P Broadcast (light, player to player position update)
+# 1: Server Broadcast OnDemand (medium, the server broadcasts position of players with ping above 200ms)
+# 2: Server Broadcast (heavy, but ensure the packets sent between players have lowest ping as possible)
+DedicatedBroadcast=1
+
+# Banner shown when the client is logging into the server
+# Valid types are JPG and PNG
+# Image size is 328x82 pixels
+# Sample Url: http://i.imgur.com/TZyeCgt.png
+BannerURL=
+# URL to open when the user clicks over the banner
+# Sample Url: http://google.com
+ClickURL=
+
+# OwnerId of the DedicatedServer. you must fill a valid 'SteamID64'.
+# Only the user with this steamID64 can send SpecialCommands from chat to the Server
+# you can find your steamID64 using this site: https://steamid.io/
+# It looks like this: 76561198007483607
+OwnerId=

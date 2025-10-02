@@ -2,11 +2,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    app.kubernetes.io/name: clusterrolebinding
-    app.kubernetes.io/instance: manager-rolebinding
-    app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: gameserver-operator
-    app.kubernetes.io/part-of: gameserver-operator
+    app.kubernetes.io/name: gameserver-operator
     app.kubernetes.io/managed-by: kustomize
   name: manager-rolebinding
 roleRef:
@@ -14,6 +10,6 @@ roleRef:
   kind: ClusterRole
   name: manager-role
 subjects:
-  - kind: ServiceAccount
-    name: controller-manager
-    namespace: system
+- kind: ServiceAccount
+  name: controller-manager
+  namespace: system
