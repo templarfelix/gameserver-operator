@@ -213,3 +213,9 @@ spec:
       // Steam credentials
       steamuser="username"
       steampass='password'
+
+  # Additional commands to run after copying files
+  postCopyCommands:
+    - "mkdir -p /data/serverfiles/mpmissions"
+    - "cd /data/serverfiles/mpmissions && git clone https://github.com/BohemiaInteractive/DayZ-Central-Economy.git ."
+    - "chown -R 1000:1000 /data/serverfiles/mpmissions"

@@ -222,36 +222,7 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 							Name:    SetupContainerName,
 							Image:   SetupContainerImage,
 							Command: []string{"sh", "-c"},
-							Args: []string{`
-								set -eu
-
-								# Create DayZ specific directories
-								mkdir -p /data/config-lgsm/dayzserver /data/serverfiles/cfg
-
-								# Copy all config files from tmp-configs to their respective locations
-								# Game config files go to /data/serverfiles/cfg/
-								# LinuxGSM config files go to /data/config-lgsm/dayzserver/
-								# Find all files in the tmp-configs directory (including subdirectories)
-								find /tmp/configs -type f | while read file; do
-								  # Extract the target path from filename (remove /tmp/configs prefix)
-								  # The files are written with full paths like /tmp/configs/data/config-lgsm/dayzserver/dayzserver.cfg
-								  # So we need to remove the /tmp/configs prefix to get the correct target path
-								  target_path="${file#/tmp/configs/}"
-
-								  # Create parent directory for target path
-								  target_dir=$(dirname "$target_path")
-								  mkdir -p "$target_dir"
-
-								  # Copy file to target location
-								  cp "$file" "$target_path"
-								  echo "Copied $file to $target_path"
-								done
-
-								# Set ownership for linuxgsm user (1000:1000)
-								chown -R 1000:1000 /data/config-lgsm/dayzserver /data/serverfiles/cfg
-
-								echo "DayZ config setup completed successfully"
-							`},
+							Args: []string{r.generateDayzSetupScript(instance)},
 							SecurityContext: &corev1.SecurityContext{
 								RunAsUser:  func(i int64) *int64 { return &i }(1000),
 								RunAsGroup: func(i int64) *int64 { return &i }(1000),
@@ -338,6 +309,47 @@ mkdir -p /tmp/configs
 	}
 
 	script += "echo 'Config files written to tmp-configs volume successfully'\n"
+	return script
+}
+
+// generateDayzSetupScript creates a shell script that copies config files and runs additional commands
+func (r *DayzReconciler) generateDayzSetupScript(instance *gameserverv1.Dayz) string {
+	script := `set -eu
+
+# Create DayZ specific directories
+mkdir -p /data/config-lgsm/dayzserver /data/serverfiles/cfg
+
+# Copy all config files from tmp-configs to their respective locations
+# Game config files go to /data/serverfiles/cfg/
+# LinuxGSM config files go to /data/config-lgsm/dayzserver/
+# Find all files in the tmp-configs directory (including subdirectories)
+find /tmp/configs -type f | while read file; do
+  # Extract the target path from filename (remove /tmp/configs prefix)
+  # The files are written with full paths like /tmp/configs/data/config-lgsm/dayzserver/dayzserver.cfg
+  # So we need to remove the /tmp/configs prefix to get the correct target path
+  target_path="${file#/tmp/configs/}"
+
+  # Create parent directory for target path
+  target_dir=$(dirname "$target_path")
+  mkdir -p "$target_dir"
+
+  # Copy file to target location
+  cp "$file" "$target_path"
+  echo "Copied $file to $target_path"
+done
+
+# Set ownership for linuxgsm user (1000:1000)
+chown -R 1000:1000 /data/config-lgsm/dayzserver /data/serverfiles/cfg
+
+# Run additional commands if specified
+`
+
+	// Add additional commands
+	for _, command := range instance.Spec.PostCopyCommands {
+		script += fmt.Sprintf("%s\n", command)
+	}
+
+	script += "echo 'DayZ config setup completed successfully'\n"
 	return script
 }
 

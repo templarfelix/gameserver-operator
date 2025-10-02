@@ -37,6 +37,10 @@ type DayzSpec struct {
 
 	// Game server configuration
 	Config DayzConfig `json:"config,omitempty"`
+
+	// Additional commands to run after copying files
+	//+optional
+	PostCopyCommands []string `json:"postCopyCommands,omitempty"`
 }
 
 // +kubebuilder:object:generate=true

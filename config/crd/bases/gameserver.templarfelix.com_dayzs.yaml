@@ -1065,6 +1065,11 @@ spec:
                   - port
                   type: object
                 type: array
+              postCopyCommands:
+                description: Additional commands to run after copying files
+                items:
+                  type: string
+                type: array
               resources:
                 description: ResourceRequirements describes the compute resource requirements.
                 properties:
