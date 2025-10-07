@@ -51,9 +51,7 @@ spec:
       targetPort: 27016
       protocol: UDP
 
-  # Load balancer IP configuration
-  # loadBalancerIP: your-public-ip-address
-
+  
   # Code server editor password
   # editorPassword: your-editor-password
 

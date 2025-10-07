@@ -1,9 +1,10 @@
 package controller
 
 import (
+	"context"
 	"fmt"
+	"strings"
 
-	"golang.org/x/net/context"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -13,6 +14,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	gcpaddress "github.com/upbound/provider-gcp/apis/compute/v1beta1"
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 
 	"github.com/go-logr/logr"
 	gameserverv1 "github.com/templarfelix/gameserver-operator/api/v1"
@@ -124,6 +128,19 @@ func ReconcileServices(ctx context.Context, k8sClient client.Client, owner metav
 func reconcileService(ctx context.Context, serviceName string, k8sClient client.Client, owner metav1.Object, ports []corev1.ServicePort, loadBalancerIP string) error {
 	logger := log.FromContext(ctx)
 
+	serviceSpec := corev1.ServiceSpec{
+		Selector: map[string]string{
+			"app": owner.GetName(),
+		},
+		Type:  corev1.ServiceTypeLoadBalancer,
+		Ports: ports,
+	}
+
+	// Only set LoadBalancerIP if it's not empty
+	if loadBalancerIP != "" {
+		serviceSpec.LoadBalancerIP = loadBalancerIP
+	}
+
 	desired := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceName,
@@ -132,14 +149,7 @@ func reconcileService(ctx context.Context, serviceName string, k8sClient client.
 				"cloud.google.com/load-balancer-type": "External",
 			},
 		},
-		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{
-				"app": owner.GetName(),
-			},
-			Type:           corev1.ServiceTypeLoadBalancer,
-			LoadBalancerIP: loadBalancerIP,
-			Ports:          ports,
-		},
+		Spec: serviceSpec,
 	}
 
 	if err := controllerutil.SetControllerReference(owner, desired, k8sClient.Scheme()); err != nil {
@@ -169,4 +179,199 @@ func separatePortsByProtocol(ports []corev1.ServicePort) (tcpPorts []corev1.Serv
 		}
 	}
 	return tcpPorts, udpPorts
+}
+
+// validatePrerequisites checks if all prerequisites for creating ComputeAddress are met
+func validatePrerequisites(ctx context.Context, k8sClient client.Client, providerConfigName string) error {
+	logger := log.FromContext(ctx)
+	
+	// For now, just log that we're validating - the actual validation will happen during Address creation
+	// TODO: Add proper ProviderConfig validation in the future
+	logger.V(1).Info("Validating prerequisites for ComputeAddress creation", "providerConfig", providerConfigName)
+	
+	return nil
+}
+
+// CreateGCPComputeAddress creates a GCP ComputeAddress resource using the new provider
+// This function creates a ComputeAddress resource for static IP allocation in GCP
+func CreateGCPComputeAddress(ctx context.Context, k8sClient client.Client, owner metav1.Object, name string) error {
+	logger := log.FromContext(ctx)
+	
+	providerConfigName := "default" // TODO: Make this configurable in the future
+	
+	// Validate prerequisites first
+	if err := validatePrerequisites(ctx, k8sClient, providerConfigName); err != nil {
+		logger.Error(err, "Prerequisites validation failed", "name", name)
+		return err
+	}
+
+	// Check if ComputeAddress already exists
+	existing := &gcpaddress.Address{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: owner.GetNamespace()}, existing)
+	if err == nil {
+		logger.V(4).Info("ComputeAddress already exists", "name", name)
+		return nil
+	}
+	if !errors.IsNotFound(err) {
+		// Check if it's a CRD not found error (common when Upbound Provider is not installed)
+		errMsg := err.Error()
+		// Log with Info level to ensure it's visible
+		logger.Info("🔍 DEBUGGING ComputeAddress Check Error", 
+			"name", name, 
+			"error", errMsg,
+			"errorType", fmt.Sprintf("%T", err),
+			"namespace", owner.GetNamespace(),
+			"fullError", err.Error())
+		
+		// Also log as Error for consistency
+		logger.Error(err, "Failed to check existing ComputeAddress - DETAILED ERROR", 
+			"name", name, 
+			"error", errMsg,
+			"errorType", fmt.Sprintf("%T", err),
+			"namespace", owner.GetNamespace())
+		
+		if strings.Contains(errMsg, "no matches for kind") || 
+		   strings.Contains(errMsg, "could not find the requested resource") ||
+		   strings.Contains(errMsg, "Address") {
+			return fmt.Errorf("Upbound Provider GCP CRDs not installed. Install with: kubectl apply -f https://raw.githubusercontent.com/upbound/provider-gcp/main/package/crds/compute.gcp.upbound.io_addresses.yaml. Original error: %w", err)
+		}
+		if strings.Contains(errMsg, "connection refused") || strings.Contains(errMsg, "timeout") {
+			return fmt.Errorf("Kubernetes API connection issue. Check if cluster is accessible. Original error: %w", err)
+		}
+		if strings.Contains(errMsg, "forbidden") || strings.Contains(errMsg, "unauthorized") {
+			return fmt.Errorf("RBAC permissions issue. Check if operator has permissions to access Address resources. Original error: %w", err)
+		}
+		
+		return fmt.Errorf("failed to check existing ComputeAddress %s: %w", name, err)
+	}
+
+	// Create the ComputeAddress object using the new provider type
+	addressType := "EXTERNAL"
+	region := "southamerica-east1" // TODO: Make this configurable in the future
+
+	computeAddress := &gcpaddress.Address{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: owner.GetNamespace(),
+			Labels: map[string]string{
+				"app.kubernetes.io/managed-by":      "gameserver-operator",
+				"gameserver.templarfelix.com/owner": owner.GetName(),
+			},
+		},
+		Spec: gcpaddress.AddressSpec{
+			ForProvider: gcpaddress.AddressParameters{
+				AddressType: &addressType,
+				Region:      &region,
+			},
+			ResourceSpec: xpv1.ResourceSpec{
+				ProviderConfigReference: &xpv1.Reference{
+					Name: providerConfigName,
+				},
+			},
+		},
+	}
+	
+	logger.Info("Creating ComputeAddress", "name", name, "region", region, "providerConfig", providerConfigName)
+
+	// Set the owner reference so the ComputeAddress is cleaned up when the owner is deleted
+	if err := controllerutil.SetControllerReference(owner, computeAddress, k8sClient.Scheme()); err != nil {
+		logger.Error(err, "Failed to set controller reference", "name", name)
+		return err
+	}
+
+	// Try to create the ComputeAddress
+	logger.Info("Creating new ComputeAddress", "name", name, "region", region, "providerConfig", providerConfigName)
+	
+	// Debug: Log the complete object being created
+	logger.V(1).Info("ComputeAddress object details", 
+		"name", computeAddress.Name,
+		"namespace", computeAddress.Namespace,
+		"addressType", *computeAddress.Spec.ForProvider.AddressType,
+		"region", *computeAddress.Spec.ForProvider.Region,
+		"providerConfigRef", computeAddress.Spec.ResourceSpec.ProviderConfigReference.Name)
+	
+	err = k8sClient.Create(ctx, computeAddress)
+	if err != nil {
+		if errors.IsAlreadyExists(err) {
+			logger.V(4).Info("ComputeAddress already exists (race condition)", "name", name)
+			return nil
+		}
+		
+		// Enhanced error logging
+		errMsg := err.Error()
+		logger.Error(err, "Failed to create ComputeAddress - detailed error", 
+			"name", name, 
+			"error", errMsg,
+			"region", region,
+			"providerConfig", providerConfigName)
+		
+		// Check for common error patterns and provide specific solutions
+		if strings.Contains(errMsg, "ProviderConfig") || strings.Contains(errMsg, "providerconfig") {
+			return fmt.Errorf("failed to create ComputeAddress %s: ProviderConfig '%s' not found. Please ensure the ProviderConfig exists: kubectl get providerconfig. Error: %w", name, providerConfigName, err)
+		}
+		if strings.Contains(errMsg, "no matches for kind") || strings.Contains(errMsg, "Address") {
+			return fmt.Errorf("failed to create ComputeAddress %s: Upbound Provider GCP CRDs not installed. Install with: kubectl apply -f https://raw.githubusercontent.com/upbound/provider-gcp/main/package/crds/compute.gcp.upbound.io_addresses.yaml. Error: %w", name, err)
+		}
+		if strings.Contains(errMsg, "authentication") || strings.Contains(errMsg, "credentials") || strings.Contains(errMsg, "unauthorized") {
+			return fmt.Errorf("failed to create ComputeAddress %s: GCP authentication failed. Check service account credentials in secret 'gcp-secret'. Error: %w", name, err)
+		}
+		if strings.Contains(errMsg, "forbidden") || strings.Contains(errMsg, "permission") {
+			return fmt.Errorf("failed to create ComputeAddress %s: Insufficient GCP permissions. Service account needs 'compute.addresses.create' permission. Error: %w", name, err)
+		}
+		if strings.Contains(errMsg, "project") {
+			return fmt.Errorf("failed to create ComputeAddress %s: GCP project issue. Check if project ID is correct in ProviderConfig. Error: %w", name, err)
+		}
+		if strings.Contains(errMsg, "region") || strings.Contains(errMsg, "location") {
+			return fmt.Errorf("failed to create ComputeAddress %s: Invalid region '%s'. Check if region exists in your GCP project. Error: %w", name, region, err)
+		}
+		
+		return fmt.Errorf("failed to create ComputeAddress %s: %w", name, err)
+	}
+
+	logger.Info("Successfully created ComputeAddress", "name", name)
+	return nil
+}
+
+// IsGCPComputeAddressReady checks if a GCP ComputeAddress resource is ready and has an IP
+func IsGCPComputeAddressReady(ctx context.Context, k8sClient client.Client, name, namespace string) (bool, string, error) {
+	logger := log.FromContext(ctx)
+
+	// Get the ComputeAddress object
+	computeAddress := &gcpaddress.Address{}
+
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, computeAddress)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			logger.V(4).Info("ComputeAddress not found", "name", name, "namespace", namespace)
+			return false, "", nil
+		}
+		logger.Error(err, "Failed to get ComputeAddress", "name", name, "namespace", namespace)
+		return false, "", fmt.Errorf("failed to get ComputeAddress %s/%s: %w", namespace, name, err)
+	}
+
+	// Log current status for debugging
+	logger.V(4).Info("ComputeAddress status", "name", name, "conditions", len(computeAddress.Status.Conditions))
+
+	// Check if the resource is ready by examining the status conditions
+	for _, condition := range computeAddress.Status.Conditions {
+		logger.V(4).Info("Checking condition", "type", string(condition.Type), "status", string(condition.Status), "reason", condition.Reason)
+		if condition.Type == "Ready" {
+			if condition.Status == "True" {
+				// Ready, return the address if available
+				if computeAddress.Status.AtProvider.Address != nil {
+					ip := *computeAddress.Status.AtProvider.Address
+					logger.Info("ComputeAddress is ready with IP", "name", name, "ip", ip)
+					return true, ip, nil
+				}
+				logger.Info("ComputeAddress is ready but no IP assigned yet", "name", name)
+				return true, "", nil
+			} else {
+				logger.Info("ComputeAddress not ready", "name", name, "status", string(condition.Status), "reason", condition.Reason, "message", condition.Message)
+				return false, "", nil
+			}
+		}
+	}
+
+	logger.V(4).Info("No Ready condition found", "name", name)
+	return false, "", nil
 }

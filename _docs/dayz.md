@@ -83,9 +83,7 @@ spec:
       targetPort: 27016
       protocol: UDP
 
-  # Load balancer IP configuration (optional: leave commented for localhost)
-  # loadBalancerIP: your-public-ip-address
-
+  
   # Code server editor password (required for VS Code editor access)
   editorPassword: your-editor-password
 

@@ -31,6 +31,18 @@ rules:
   - update
   - watch
 - apiGroups:
+  - compute.gcp.upbound.io
+  resources:
+  - addresses
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - gameserver.templarfelix.com
   resources:
   - dayzs

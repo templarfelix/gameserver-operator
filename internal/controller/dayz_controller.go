@@ -54,6 +54,8 @@ type DayzReconciler struct {
 // Add RBAC for networking resources to fix permission warnings
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch
 
+// +kubebuilder:rbac:groups=compute.gcp.upbound.io,resources=addresses,verbs=get;list;watch;create;update;patch;delete
+
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
@@ -130,6 +132,11 @@ func (r *DayzReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return reconcile.Result{Requeue: true}, nil
 	}
 
+	// Create GCP ComputeAddress for static IP (if needed)
+	if err := r.reconcileComputeAddress(ctx, instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	// Normal reconciliation
 	if err := r.reconcilePVC(ctx, instance); err != nil {
 		return reconcile.Result{}, err
@@ -162,7 +169,24 @@ func (r *DayzReconciler) reconcilePVC(ctx context.Context, instance *gameserverv
 // reconcileServices wraps ReconcileServices with logging for concurrency conflicts
 func (r *DayzReconciler) reconcileServices(ctx context.Context, instance *gameserverv1.Dayz) error {
 	logger := logf.FromContext(ctx)
-	if err := ReconcileServices(ctx, r.Client, instance, instance.Spec.Ports, instance.Spec.LoadBalancerIP); err != nil {
+
+	// Check if the ComputeAddress is ready and get its IP
+	computeAddressName := instance.Name + "-static-ip"
+	ready, loadBalancerIP, err := IsGCPComputeAddressReady(ctx, r.Client, computeAddressName, instance.Namespace)
+	if err != nil {
+		// If there's an error checking readiness, log it but continue without a specific IP
+		logger.Info("Error checking ComputeAddress readiness, creating services without specific IP", "error", err)
+		loadBalancerIP = ""
+	} else if !ready {
+		// If not ready, create services without a specific IP but log that we're waiting
+		logger.Info("ComputeAddress not ready yet, creating services without specific IP")
+		loadBalancerIP = ""
+	} else {
+		// If ready, use the allocated IP
+		logger.Info("Using IP from ComputeAddress", "ip", loadBalancerIP)
+	}
+
+	if err := ReconcileServices(ctx, r.Client, instance, instance.Spec.Ports, loadBalancerIP); err != nil {
 		// Log concurrent modification conflicts
 		if errors.IsConflict(err) {
 			logger.Info("Services conflict detected, will retry")
@@ -292,6 +316,23 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 	return nil
 }
 
+// reconcileComputeAddress creates a GCP ComputeAddress for the game server
+func (r *DayzReconciler) reconcileComputeAddress(ctx context.Context, instance *gameserverv1.Dayz) error {
+	logger := logf.FromContext(ctx)
+
+	// Create ComputeAddress name based on the instance name
+	computeAddressName := instance.Name + "-static-ip"
+
+	// Create the ComputeAddress resource
+	if err := CreateGCPComputeAddress(ctx, r.Client, instance, computeAddressName); err != nil {
+		logger.Error(err, "Failed to create ComputeAddress", "name", computeAddressName)
+		return err
+	}
+
+	logger.Info("Successfully created or verified ComputeAddress", "name", computeAddressName)
+	return nil
+}
+
 // generateDayzConfigSetupScript creates a shell script that writes config files to the tmp-configs volume
 func (r *DayzReconciler) generateDayzConfigSetupScript(instance *gameserverv1.Dayz) string {
 	script := `set -eu
@@ -315,6 +356,12 @@ mkdir -p /tmp/configs
 // generateDayzSetupScript creates a shell script that copies config files and runs additional commands
 func (r *DayzReconciler) generateDayzSetupScript(instance *gameserverv1.Dayz) string {
 	script := `set -eu
+
+# Install git if postCopyCommands contain git commands
+if grep -q "git" <<< "` + fmt.Sprintf("%v", instance.Spec.PostCopyCommands) + `"; then
+  echo "Installing git for postCopyCommands..."
+  apk add --no-cache git
+fi
 
 # Create DayZ specific directories
 mkdir -p /data/config-lgsm/dayzserver /data/serverfiles/cfg

@@ -54,8 +54,6 @@ type Base struct {
 
 	Ports []corev1.ServicePort `json:"ports,omitempty"`
 
-	LoadBalancerIP string `json:"loadBalancerIP,omitempty"`
-
 	Resources corev1.ResourceRequirements `json:"resources"`
 
 	// NodeSelector is a selector which must be true for the pod to fit on a node

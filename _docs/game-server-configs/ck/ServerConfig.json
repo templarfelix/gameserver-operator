@@ -1,8 +1,0 @@
-{
-  "gameId": "",
-  "world": 0,
-  "worldName": "SERVERNAME",
-  "worldSeed": 0,
-  "maxNumberPlayers": 100,
-  "maxNumberPacketsSentPerFrame": 1
-}
