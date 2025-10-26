@@ -132,8 +132,9 @@ func reconcileService(ctx context.Context, serviceName string, k8sClient client.
 		Selector: map[string]string{
 			"app": owner.GetName(),
 		},
-		Type:  corev1.ServiceTypeLoadBalancer,
-		Ports: ports,
+		Type:                  corev1.ServiceTypeLoadBalancer,
+		Ports:                 ports,
+		ExternalTrafficPolicy: corev1.ServiceExternalTrafficPolicyLocal,
 	}
 
 	// Only set LoadBalancerIP if it's not empty
@@ -145,7 +146,7 @@ func reconcileService(ctx context.Context, serviceName string, k8sClient client.
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceName,
 			Namespace: owner.GetNamespace(),
-			Labels: map[string]string{
+			Annotations: map[string]string{
 				"cloud.google.com/load-balancer-type": "External",
 			},
 		},
