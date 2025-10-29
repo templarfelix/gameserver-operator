@@ -15,8 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	gcpaddress "github.com/upbound/provider-gcp/apis/compute/v1beta1"
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	gcpaddress "github.com/upbound/provider-gcp/apis/compute/v1beta1"
 
 	"github.com/go-logr/logr"
 	gameserverv1 "github.com/templarfelix/gameserver-operator/api/v1"
@@ -185,11 +185,11 @@ func separatePortsByProtocol(ports []corev1.ServicePort) (tcpPorts []corev1.Serv
 // validatePrerequisites checks if all prerequisites for creating ComputeAddress are met
 func validatePrerequisites(ctx context.Context, k8sClient client.Client, providerConfigName string) error {
 	logger := log.FromContext(ctx)
-	
+
 	// For now, just log that we're validating - the actual validation will happen during Address creation
 	// TODO: Add proper ProviderConfig validation in the future
 	logger.V(1).Info("Validating prerequisites for ComputeAddress creation", "providerConfig", providerConfigName)
-	
+
 	return nil
 }
 
@@ -197,9 +197,9 @@ func validatePrerequisites(ctx context.Context, k8sClient client.Client, provide
 // This function creates a ComputeAddress resource for static IP allocation in GCP
 func CreateGCPComputeAddress(ctx context.Context, k8sClient client.Client, owner metav1.Object, name string) error {
 	logger := log.FromContext(ctx)
-	
+
 	providerConfigName := "default" // TODO: Make this configurable in the future
-	
+
 	// Validate prerequisites first
 	if err := validatePrerequisites(ctx, k8sClient, providerConfigName); err != nil {
 		logger.Error(err, "Prerequisites validation failed", "name", name)
@@ -217,32 +217,32 @@ func CreateGCPComputeAddress(ctx context.Context, k8sClient client.Client, owner
 		// Check if it's a CRD not found error (common when Upbound Provider is not installed)
 		errMsg := err.Error()
 		// Log with Info level to ensure it's visible
-		logger.Info("🔍 DEBUGGING ComputeAddress Check Error", 
-			"name", name, 
+		logger.Info("🔍 DEBUGGING ComputeAddress Check Error",
+			"name", name,
 			"error", errMsg,
 			"errorType", fmt.Sprintf("%T", err),
 			"namespace", owner.GetNamespace(),
 			"fullError", err.Error())
-		
+
 		// Also log as Error for consistency
-		logger.Error(err, "Failed to check existing ComputeAddress - DETAILED ERROR", 
-			"name", name, 
+		logger.Error(err, "Failed to check existing ComputeAddress - DETAILED ERROR",
+			"name", name,
 			"error", errMsg,
 			"errorType", fmt.Sprintf("%T", err),
 			"namespace", owner.GetNamespace())
-		
-		if strings.Contains(errMsg, "no matches for kind") || 
-		   strings.Contains(errMsg, "could not find the requested resource") ||
-		   strings.Contains(errMsg, "Address") {
-			return fmt.Errorf("Upbound Provider GCP CRDs not installed. Install with: kubectl apply -f https://raw.githubusercontent.com/upbound/provider-gcp/main/package/crds/compute.gcp.upbound.io_addresses.yaml. Original error: %w", err)
+
+		if strings.Contains(errMsg, "no matches for kind") ||
+			strings.Contains(errMsg, "could not find the requested resource") ||
+			strings.Contains(errMsg, "Address") {
+			return fmt.Errorf("upbound Provider GCP CRDs not installed. Install with: kubectl apply -f https://raw.githubusercontent.com/upbound/provider-gcp/main/package/crds/compute.gcp.upbound.io_addresses.yaml. Original error: %w", err)
 		}
 		if strings.Contains(errMsg, "connection refused") || strings.Contains(errMsg, "timeout") {
-			return fmt.Errorf("Kubernetes API connection issue. Check if cluster is accessible. Original error: %w", err)
+			return fmt.Errorf("kubernetes API connection issue. Check if cluster is accessible. Original error: %w", err)
 		}
 		if strings.Contains(errMsg, "forbidden") || strings.Contains(errMsg, "unauthorized") {
 			return fmt.Errorf("RBAC permissions issue. Check if operator has permissions to access Address resources. Original error: %w", err)
 		}
-		
+
 		return fmt.Errorf("failed to check existing ComputeAddress %s: %w", name, err)
 	}
 
@@ -271,7 +271,7 @@ func CreateGCPComputeAddress(ctx context.Context, k8sClient client.Client, owner
 			},
 		},
 	}
-	
+
 	logger.Info("Creating ComputeAddress", "name", name, "region", region, "providerConfig", providerConfigName)
 
 	// Set the owner reference so the ComputeAddress is cleaned up when the owner is deleted
@@ -282,30 +282,30 @@ func CreateGCPComputeAddress(ctx context.Context, k8sClient client.Client, owner
 
 	// Try to create the ComputeAddress
 	logger.Info("Creating new ComputeAddress", "name", name, "region", region, "providerConfig", providerConfigName)
-	
+
 	// Debug: Log the complete object being created
-	logger.V(1).Info("ComputeAddress object details", 
+	logger.V(1).Info("ComputeAddress object details",
 		"name", computeAddress.Name,
 		"namespace", computeAddress.Namespace,
 		"addressType", *computeAddress.Spec.ForProvider.AddressType,
 		"region", *computeAddress.Spec.ForProvider.Region,
-		"providerConfigRef", computeAddress.Spec.ResourceSpec.ProviderConfigReference.Name)
-	
+		"providerConfigRef", computeAddress.Spec.ProviderConfigReference.Name)
+
 	err = k8sClient.Create(ctx, computeAddress)
 	if err != nil {
 		if errors.IsAlreadyExists(err) {
 			logger.V(4).Info("ComputeAddress already exists (race condition)", "name", name)
 			return nil
 		}
-		
+
 		// Enhanced error logging
 		errMsg := err.Error()
-		logger.Error(err, "Failed to create ComputeAddress - detailed error", 
-			"name", name, 
+		logger.Error(err, "Failed to create ComputeAddress - detailed error",
+			"name", name,
 			"error", errMsg,
 			"region", region,
 			"providerConfig", providerConfigName)
-		
+
 		// Check for common error patterns and provide specific solutions
 		if strings.Contains(errMsg, "ProviderConfig") || strings.Contains(errMsg, "providerconfig") {
 			return fmt.Errorf("failed to create ComputeAddress %s: ProviderConfig '%s' not found. Please ensure the ProviderConfig exists: kubectl get providerconfig. Error: %w", name, providerConfigName, err)
@@ -325,7 +325,7 @@ func CreateGCPComputeAddress(ctx context.Context, k8sClient client.Client, owner
 		if strings.Contains(errMsg, "region") || strings.Contains(errMsg, "location") {
 			return fmt.Errorf("failed to create ComputeAddress %s: Invalid region '%s'. Check if region exists in your GCP project. Error: %w", name, region, err)
 		}
-		
+
 		return fmt.Errorf("failed to create ComputeAddress %s: %w", name, err)
 	}
 

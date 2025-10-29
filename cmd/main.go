@@ -27,10 +27,10 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
@@ -42,10 +42,9 @@ import (
 
 	gameserverv1 "github.com/templarfelix/gameserver-operator/api/v1"
 	"github.com/templarfelix/gameserver-operator/internal/controller"
-	
+
 	// Import Upbound Provider GCP types - correct path based on CRD
 	gcpaddress "github.com/upbound/provider-gcp/apis/compute/v1beta1"
-	
 	// +kubebuilder:scaffold:imports
 )
 
@@ -58,14 +57,14 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(gameserverv1.AddToScheme(scheme))
-	
+
 	// Register Upbound Provider GCP types manually
 	// Define the GroupVersion for GCP Address
 	gv := schema.GroupVersion{Group: "compute.gcp.upbound.io", Version: "v1beta1"}
 	fmt.Printf("🔍 Registering GCP Address types with GroupVersion: %s\n", gv.String())
 	scheme.AddKnownTypes(gv, &gcpaddress.Address{}, &gcpaddress.AddressList{})
 	metav1.AddToGroupVersion(scheme, gv)
-	
+
 	// +kubebuilder:scaffold:scheme
 }
 
