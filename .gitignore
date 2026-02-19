@@ -1,4 +1,3 @@
-
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -26,6 +25,3 @@ go.work
 *.swp
 *.swo
 *~
-
-# debug folder
-_debug

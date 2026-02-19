@@ -1,7 +1,4 @@
 ## Append samples of your project ##
 resources:
-  - gameserver_v1alpha1_dayz.yaml
-  - gameserver_v1alpha1_projectzomboid.yaml
-  - gameserver_v1alpha1_minecraft.yaml
-  - gameserver_v1alpha1_ark.yaml
-#+kubebuilder:scaffold:manifestskustomizesamples
+- gameserver_v1_dayz.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

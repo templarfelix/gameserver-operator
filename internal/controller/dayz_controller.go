@@ -1,5 +1,5 @@
 /*
-Copyright 2024.
+Copyright 2025.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,22 +20,20 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	gameserverv1 "github.com/templarfelix/gameserver-operator/api/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	gameserverv1alpha1 "github.com/templarfelix/gameserver-operator/api/v1alpha1/game"
-	"github.com/templarfelix/gameserver-operator/internal/controller"
 )
 
 // DayzReconciler reconciles a Dayz object
@@ -44,17 +42,19 @@ type DayzReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=gameserver.templarfelix.com,resources=dayzs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=gameserver.templarfelix.com,resources=dayzs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=gameserver.templarfelix.com,resources=dayzs/finalizers,verbs=update
+// +kubebuilder:rbac:groups=gameserver.templarfelix.com,resources=dayzs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=gameserver.templarfelix.com,resources=dayzs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=gameserver.templarfelix.com,resources=dayzs/finalizers,verbs=update
 
-//+kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 
 // Add RBAC for networking resources to fix permission warnings
-//+kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch
+
+// +kubebuilder:rbac:groups=compute.gcp.upbound.io,resources=addresses,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -64,11 +64,11 @@ type DayzReconciler struct {
 // the user.
 //
 // For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.21.0/pkg/reconcile
 func (r *DayzReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx).WithValues("dayz", req.Name)
+	logger := logf.FromContext(ctx).WithValues("dayz", req.Name)
 
-	instance := &gameserverv1alpha1.Dayz{}
+	instance := &gameserverv1.Dayz{}
 
 	err := r.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
@@ -132,6 +132,11 @@ func (r *DayzReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return reconcile.Result{Requeue: true}, nil
 	}
 
+	// Create GCP ComputeAddress for static IP (if needed)
+	if err := r.reconcileComputeAddress(ctx, instance); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	// Normal reconciliation
 	if err := r.reconcilePVC(ctx, instance); err != nil {
 		return reconcile.Result{}, err
@@ -149,9 +154,9 @@ func (r *DayzReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 }
 
 // reconcilePVC wraps ReconcilePVC with logging for concurrency conflicts
-func (r *DayzReconciler) reconcilePVC(ctx context.Context, instance *gameserverv1alpha1.Dayz) error {
-	logger := log.FromContext(ctx)
-	if err := controller.ReconcilePVC(ctx, r.Client, instance, &instance.Spec.Persistence); err != nil {
+func (r *DayzReconciler) reconcilePVC(ctx context.Context, instance *gameserverv1.Dayz) error {
+	logger := logf.FromContext(ctx)
+	if err := ReconcilePVC(ctx, r.Client, instance, &instance.Spec.Persistence); err != nil {
 		// Log concurrent modification conflicts
 		if errors.IsConflict(err) {
 			logger.Info("PVC conflict detected, will retry")
@@ -162,9 +167,26 @@ func (r *DayzReconciler) reconcilePVC(ctx context.Context, instance *gameserverv
 }
 
 // reconcileServices wraps ReconcileServices with logging for concurrency conflicts
-func (r *DayzReconciler) reconcileServices(ctx context.Context, instance *gameserverv1alpha1.Dayz) error {
-	logger := log.FromContext(ctx)
-	if err := controller.ReconcileServices(ctx, r.Client, instance, instance.Spec.Ports, instance.Spec.LoadBalancerIP); err != nil {
+func (r *DayzReconciler) reconcileServices(ctx context.Context, instance *gameserverv1.Dayz) error {
+	logger := logf.FromContext(ctx)
+
+	// Check if the ComputeAddress is ready and get its IP
+	computeAddressName := instance.Name + "-static-ip"
+	ready, loadBalancerIP, err := IsGCPComputeAddressReady(ctx, r.Client, computeAddressName, instance.Namespace)
+	if err != nil {
+		// If there's an error checking readiness, log it but continue without a specific IP
+		logger.Info("Error checking ComputeAddress readiness, creating services without specific IP", "error", err)
+		loadBalancerIP = ""
+	} else if !ready {
+		// If not ready, create services without a specific IP but log that we're waiting
+		logger.Info("ComputeAddress not ready yet, creating services without specific IP")
+		loadBalancerIP = ""
+	} else {
+		// If ready, use the allocated IP
+		logger.Info("Using IP from ComputeAddress", "ip", loadBalancerIP)
+	}
+
+	if err := ReconcileServices(ctx, r.Client, instance, instance.Spec.Ports, loadBalancerIP); err != nil {
 		// Log concurrent modification conflicts
 		if errors.IsConflict(err) {
 			logger.Info("Services conflict detected, will retry")
@@ -174,18 +196,18 @@ func (r *DayzReconciler) reconcileServices(ctx context.Context, instance *gamese
 	return nil
 }
 
-func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *gameserverv1alpha1.Dayz) error {
-	logger := log.FromContext(ctx)
+func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *gameserverv1.Dayz) error {
+	logger := logf.FromContext(ctx)
 
 	// Generate container ports dynamically from CRD ports
-	var containerPorts []corev1.ContainerPort
-	for _, port := range instance.Spec.Ports {
+	containerPorts := make([]corev1.ContainerPort, len(instance.Spec.Ports))
+	for i, port := range instance.Spec.Ports {
 		containerPort := int32(port.TargetPort.IntValue())
-		containerPorts = append(containerPorts, corev1.ContainerPort{
+		containerPorts[i] = corev1.ContainerPort{
 			ContainerPort: containerPort,
 			Name:          port.Name,
 			Protocol:      port.Protocol,
-		})
+		}
 	}
 
 	k8sResource := &appsv1.Deployment{
@@ -213,7 +235,7 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 					InitContainers: []corev1.Container{
 						{
 							Name:    "config-writer",
-							Image:   controller.SetupContainerImage,
+							Image:   SetupContainerImage,
 							Command: []string{"sh", "-c"},
 							Args:    []string{r.generateDayzConfigSetupScript(instance)},
 							VolumeMounts: []corev1.VolumeMount{
@@ -221,52 +243,23 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 							},
 						},
 						{
-							Name:    controller.SetupContainerName,
-							Image:   controller.SetupContainerImage,
+							Name:    SetupContainerName,
+							Image:   SetupContainerImage,
 							Command: []string{"sh", "-c"},
-							Args: []string{`
-								set -eu
-
-								# Create DayZ specific directories
-								mkdir -p /data/config-lgsm/dayzserver /data/serverfiles/cfg
-
-								# Copy all config files from tmp-configs to their respective locations
-								# Game config files go to /data/serverfiles/cfg/
-								# LinuxGSM config files go to /data/config-lgsm/dayzserver/
-								# Find all files in the tmp-configs directory (including subdirectories)
-								find /tmp/configs -type f | while read file; do
-								  # Extract the target path from filename (remove /tmp/configs prefix)
-								  # The files are written with full paths like /tmp/configs/data/config-lgsm/dayzserver/dayzserver.cfg
-								  # So we need to remove the /tmp/configs prefix to get the correct target path
-								  target_path="${file#/tmp/configs/}"
-
-								  # Create parent directory for target path
-								  target_dir=$(dirname "$target_path")
-								  mkdir -p "$target_dir"
-
-								  # Copy file to target location
-								  cp "$file" "$target_path"
-								  echo "Copied $file to $target_path"
-								done
-
-								# Set ownership for linuxgsm user (1000:1000)
-								chown -R 1000:1000 /data/config-lgsm/dayzserver /data/serverfiles/cfg
-
-								echo "DayZ config setup completed successfully"
-							`},
+							Args:    []string{r.generateDayzSetupScript(instance)},
 							SecurityContext: &corev1.SecurityContext{
 								RunAsUser:  func(i int64) *int64 { return &i }(1000),
 								RunAsGroup: func(i int64) *int64 { return &i }(1000),
 							},
 							VolumeMounts: []corev1.VolumeMount{
-								{Name: controller.DataVolumeName, MountPath: "/data"},
+								{Name: DataVolumeName, MountPath: "/data"},
 								{Name: "tmp-configs", MountPath: "/tmp/configs"},
 							},
 						},
 					},
 					Containers: []corev1.Container{
-						controller.GetSecureGameServerContainer("server", instance.Spec.Image, instance.Spec.Resources, containerPorts),
-						controller.GetSecureCodeServerContainer(instance.Spec.EditorPassword),
+						GetSecureGameServerContainer("server", instance.Spec.Image, instance.Spec.Resources, containerPorts),
+						GetSecureCodeServerContainer(instance.Spec.EditorPassword),
 					},
 					Volumes: []corev1.Volume{
 						{
@@ -276,7 +269,7 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 							},
 						},
 						{
-							Name: controller.DataVolumeName,
+							Name: DataVolumeName,
 							VolumeSource: corev1.VolumeSource{
 								PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 									ClaimName: instance.Name + "-pvc",
@@ -307,7 +300,7 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 	}
 
 	// Check if the Deployment needs update
-	if !controller.CompareDeployments(found, k8sResource) {
+	if !CompareDeployments(found, k8sResource) {
 		logger.Info("Updating Deployment", "Namespace", found.Namespace, "Name", found.Name)
 		found.Spec = k8sResource.Spec
 		if err := r.Update(ctx, found); err != nil {
@@ -323,8 +316,25 @@ func (r *DayzReconciler) reconcileDeployment(ctx context.Context, instance *game
 	return nil
 }
 
+// reconcileComputeAddress creates a GCP ComputeAddress for the game server
+func (r *DayzReconciler) reconcileComputeAddress(ctx context.Context, instance *gameserverv1.Dayz) error {
+	logger := logf.FromContext(ctx)
+
+	// Create ComputeAddress name based on the instance name
+	computeAddressName := instance.Name + "-static-ip"
+
+	// Create the ComputeAddress resource
+	if err := CreateGCPComputeAddress(ctx, r.Client, instance, computeAddressName); err != nil {
+		logger.Error(err, "Failed to create ComputeAddress", "name", computeAddressName)
+		return err
+	}
+
+	logger.Info("Successfully created or verified ComputeAddress", "name", computeAddressName)
+	return nil
+}
+
 // generateDayzConfigSetupScript creates a shell script that writes config files to the tmp-configs volume
-func (r *DayzReconciler) generateDayzConfigSetupScript(instance *gameserverv1alpha1.Dayz) string {
+func (r *DayzReconciler) generateDayzConfigSetupScript(instance *gameserverv1.Dayz) string {
 	script := `set -eu
 mkdir -p /tmp/configs
 
@@ -343,6 +353,53 @@ mkdir -p /tmp/configs
 	return script
 }
 
+// generateDayzSetupScript creates a shell script that copies config files and runs additional commands
+func (r *DayzReconciler) generateDayzSetupScript(instance *gameserverv1.Dayz) string {
+	script := `set -eu
+
+# Install git if postCopyCommands contain git commands
+if grep -q "git" <<< "` + fmt.Sprintf("%v", instance.Spec.PostCopyCommands) + `"; then
+  echo "Installing git for postCopyCommands..."
+  apk add --no-cache git
+fi
+
+# Create DayZ specific directories
+mkdir -p /data/config-lgsm/dayzserver /data/serverfiles/cfg
+
+# Copy all config files from tmp-configs to their respective locations
+# Game config files go to /data/serverfiles/cfg/
+# LinuxGSM config files go to /data/config-lgsm/dayzserver/
+# Find all files in the tmp-configs directory (including subdirectories)
+find /tmp/configs -type f | while read file; do
+  # Extract the target path from filename (remove /tmp/configs prefix)
+  # The files are written with full paths like /tmp/configs/data/config-lgsm/dayzserver/dayzserver.cfg
+  # So we need to remove the /tmp/configs prefix to get the correct target path
+  target_path="${file#/tmp/configs/}"
+
+  # Create parent directory for target path
+  target_dir=$(dirname "$target_path")
+  mkdir -p "$target_dir"
+
+  # Copy file to target location
+  cp "$file" "$target_path"
+  echo "Copied $file to $target_path"
+done
+
+# Set ownership for linuxgsm user (1000:1000)
+chown -R 1000:1000 /data/config-lgsm/dayzserver /data/serverfiles/cfg
+
+# Run additional commands if specified
+`
+
+	// Add additional commands
+	for _, command := range instance.Spec.PostCopyCommands {
+		script += fmt.Sprintf("%s\n", command)
+	}
+
+	script += "echo 'DayZ config setup completed successfully'\n"
+	return script
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *DayzReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Temporarily disabled webhooks due to certificate issues
@@ -351,6 +408,6 @@ func (r *DayzReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// }
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gameserverv1alpha1.Dayz{}).
+		For(&gameserverv1.Dayz{}).
 		Complete(r)
 }

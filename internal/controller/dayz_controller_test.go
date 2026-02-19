@@ -1,5 +1,5 @@
 /*
-Copyright 2024.
+Copyright 2025.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	gameserverv1alpha1 "github.com/templarfelix/gameserver-operator/api/v1alpha1/game"
+	gameserverv1 "github.com/templarfelix/gameserver-operator/api/v1"
 )
 
 var _ = Describe("Dayz Controller", func() {
@@ -40,20 +40,18 @@ var _ = Describe("Dayz Controller", func() {
 			Name:      resourceName,
 			Namespace: "default", // TODO(user):Modify as needed
 		}
-		dayz := &gameserverv1alpha1.Dayz{}
+		dayz := &gameserverv1.Dayz{}
 
 		BeforeEach(func() {
 			By("creating the custom resource for the Kind Dayz")
 			err := k8sClient.Get(ctx, typeNamespacedName, dayz)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &gameserverv1alpha1.Dayz{
+				resource := &gameserverv1.Dayz{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					Spec: gameserverv1alpha1.DayzSpec{
-						Image: "gameservermanagers/gameserver:dayz",
-					},
+					// TODO(user): Specify other spec details if needed.
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
@@ -61,7 +59,7 @@ var _ = Describe("Dayz Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &gameserverv1alpha1.Dayz{}
+			resource := &gameserverv1.Dayz{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
